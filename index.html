@@ -52,7 +52,7 @@
               <td class="text-end">Subtotal</td>
               <td class="text-end" x-text="formatNumber(person.subtotal)"></td>
             </tr>
-            <tr class="table-secondary" x-show="person.fee !== 0">
+            <tr class="table-secondary" x-show="person.feeTotal">
               <td></td>
               <td class="text-end">Fee / Disc. (<span x-text="formatNumber(person.feePercentage) + '%'"></span>)</td>
               <td class="text-end" x-text="formatNumber(person.feeTotal)"></td>
@@ -110,6 +110,7 @@
               }
               const people = line
                 .slice(spaceIndex)
+                .toUpperCase()
                 .split(',')
                 .map((name) => name.trim())
                 .filter((name) => name);
