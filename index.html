@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Split Bill</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD"
+      crossorigin="anonymous"
+    />
+    <style>
+      .container {
+        max-width: 720px;
+      }
+
+      #textInput {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" x-data="spill">
+      <h4 class="mt-4">Split Bill</h4>
+
+      <textarea id="textInput" class="form-control font-monospace mt-4" rows="5" x-model="text"></textarea>
+
+      <template x-for="person in parsedData">
+        <div class="mt-4">
+          <h5 x-text="person.name"></h5>
+          <table class="table table-sm">
+            <tr class="table-dark">
+              <th>Name</th>
+              <th class="text-end">Split</th>
+              <th class="text-end">Amount</th>
+            </tr>
+            <template x-for="item in person.items">
+              <tr>
+                <td x-text="'Item ' + item.line"></td>
+                <td
+                  class="text-end"
+                  x-text="item.prorateWith > 1 ? formatNumber(item.originalAmount) + ' / ' + item.prorateWith : '&ndash;'"
+                ></td>
+                <td class="text-end" x-text="formatNumber(item.proratedAmount)"></td>
+              </tr>
+            </template>
+            <tr class="table-secondary">
+              <td></td>
+              <td class="text-end">Subtotal</td>
+              <td class="text-end" x-text="formatNumber(person.subtotal)"></td>
+            </tr>
+            <tr class="table-secondary" x-show="person.fee !== 0">
+              <td></td>
+              <td class="text-end">Fee / Disc. (<span x-text="formatNumber(person.feePercentage) + '%'"></span>)</td>
+              <td class="text-end" x-text="formatNumber(person.feeTotal)"></td>
+            </tr>
+            <tr class="table-primary">
+              <th></th>
+              <th class="text-end">Total</th>
+              <th class="text-end" x-text="formatNumber(person.finalTotal)"></th>
+            </tr>
+          </table>
+        </div>
+      </template>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+      // Text area auto-resize
+      const textarea = document.getElementById('textInput');
+      const autoResize = () => {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+      };
+      textarea.addEventListener('input', autoResize, false);
+      autoResize();
+
+      // Alpine data
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('spill', () => ({
+          text: '30000 A\n27500 B\n8000 A, B\n\n72050',
+
+          parsedData() {
+            const lines = this.text.split('\n');
+
+            if (lines.length < 3) {
+              throw Error('Incomplete data');
+            }
+            if (lines[lines.length - 2].trim() !== '') {
+              throw Error('Second last line needs to be empty');
+            }
+            const finalTotal = parseInt(lines[lines.length - 1].trim());
+            if (!(finalTotal > 0)) {
+              return Error('Total is in invalid format');
+            }
+
+            const peopleMap = {};
+            let proratedTotal = 0;
+            const items = lines.slice(0, lines.length - 2).map((line, lineIndex) => {
+              const spaceIndex = line.indexOf(' ');
+              if (spaceIndex < 0) {
+                return Error(`Incomplete item, on line: ${lineIndex + 1}`);
+              }
+              const amount = parseInt(line.slice(0, spaceIndex));
+              if (!(amount > 0)) {
+                return Error(`Amount is in invalid format, on line: ${lineIndex + 1}`);
+              }
+              const people = line
+                .slice(spaceIndex)
+                .split(',')
+                .map((name) => name.trim())
+                .filter((name) => name);
+              if (!people.length) {
+                return Error(`No people names, on line: ${lineIndex + 1}`);
+              }
+              const proratedAmount = Math.round(amount / people.length);
+              people.forEach((person) => {
+                peopleMap[person] = peopleMap[person] || [];
+                peopleMap[person].push({
+                  line: lineIndex + 1,
+                  originalAmount: amount,
+                  prorateWith: people.length,
+                  proratedAmount: proratedAmount,
+                });
+                proratedTotal += proratedAmount;
+              });
+            });
+            const feePercentage = Math.round(((finalTotal - proratedTotal) * 1000) / proratedTotal) / 10;
+
+            return Object.keys(peopleMap)
+              .sort()
+              .map((person) => {
+                const personSubtotal = peopleMap[person].reduce((acc, cur) => acc + cur.proratedAmount, 0);
+                const personFinalTotal = Math.round((personSubtotal * finalTotal) / proratedTotal);
+                console.log(personSubtotal, proratedTotal, finalTotal, personFinalTotal);
+                const personFeeTotal = personFinalTotal - personSubtotal;
+                return {
+                  name: person,
+                  items: peopleMap[person],
+                  subtotal: personSubtotal,
+                  feeTotal: personFeeTotal,
+                  feePercentage,
+                  finalTotal: personFinalTotal,
+                };
+              });
+          },
+
+          formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          },
+        }));
+      });
+    </script>
+  </body>
+</html>
