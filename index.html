@@ -15,52 +15,60 @@
       .container {
         max-width: 720px;
       }
-
-      #textInput {
+      .fs-7 {
+        font-size: 0.8rem;
+      }
+      #itemsInput {
         overflow: hidden;
       }
     </style>
   </head>
 
-  <body>
+  <body class="bg-light-subtle">
     <div class="container" x-data="spill">
-      <h4 class="mt-4">Split Bill</h4>
+      <h4 class="my-4 fw-bold">Split Bill</h4>
 
-      <textarea id="textInput" class="form-control font-monospace mt-4" rows="5" x-model="text"></textarea>
+      <div class="mt-3">
+        <label for="totalInput" class="form-label">Total</label>
+        <input id="totalInput" type="number" class="form-control" x-model="total"></input>
+      </div>
+      <div class="mt-3">
+        <label for="itemsInput" class="form-label">Items</label>
+        <textarea id="itemsInput" class="form-control" rows="5" x-model="items"></textarea>
+      </div>
+      <div class="mt-3">
+        <button type="button" class="btn btn-danger" @click="clear">Clear</button>
+      </div>
 
-      <template x-for="person in parsedData">
-        <div class="mt-4">
-          <h5 x-text="person.name"></h5>
-          <table class="table table-sm">
+      <div class="text-danger my-4" x-text="error" x-if="error"></div>
+      <template x-if="parsedData">
+        <div class="table-responsive my-4">
+          <table class="table table-sm fs-7 text-end bg-white">
             <tr class="table-dark">
-              <th>Name</th>
-              <th class="text-end">Split</th>
-              <th class="text-end">Amount</th>
+              <th class="text-start">NO.</th>
+              <th>PRICE</th>
+              <th>+&nbsp;FEE&nbsp;(<span x-text="formatNumber(parsedData.feePercentage)"></span>%)</th>
+              <template x-for="person in parsedData.people">
+                <th x-text="person"></th>
+              </template>
             </tr>
-            <template x-for="item in person.items">
+            <template x-for="item in parsedData.items">
               <tr>
-                <td x-text="'Item ' + item.line"></td>
-                <td
-                  class="text-end"
-                  x-text="item.prorateWith > 1 ? formatNumber(item.originalAmount) + ' / ' + item.prorateWith : '&ndash;'"
-                ></td>
-                <td class="text-end" x-text="formatNumber(item.proratedAmount)"></td>
+                <td class="table-secondary text-start" x-text="item.no"></td>
+                <td class="table-secondary" x-text="formatNumber(item.price)"></td>
+                <td class="table-secondary" x-text="formatNumber(item.priceWithFee)"></td>
+                <template x-for="person in parsedData.people">
+                  <td x-text="formatNumber(item.people[person])"></td>
+                </template>
               </tr>
             </template>
-            <tr class="table-secondary">
-              <td></td>
-              <td class="text-end">Subtotal</td>
-              <td class="text-end" x-text="formatNumber(person.subtotal)"></td>
-            </tr>
-            <tr class="table-secondary" x-show="person.feeTotal">
-              <td></td>
-              <td class="text-end">Fee / Disc. (<span x-text="formatNumber(person.feePercentage) + '%'"></span>)</td>
-              <td class="text-end" x-text="formatNumber(person.feeTotal)"></td>
-            </tr>
-            <tr class="table-primary">
-              <th></th>
-              <th class="text-end">Total</th>
-              <th class="text-end" x-text="formatNumber(person.finalTotal)"></th>
+            <tr>
+              <th class="table-secondary"></th>
+              <th class="table-secondary" x-text="formatNumber(parsedData.totalPrice)"></th>
+              <th class="table-secondary" x-text="formatNumber(parsedData.totalPriceWithFee)")></th>
+              <template x-for="person in parsedData.people">
+                <th class="table-success" x-text="formatNumber(parsedData.peopleTotal[person])"></th>
+              </template>
             </tr>
           </table>
         </div>
@@ -70,7 +78,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
       // Text area auto-resize
-      const textarea = document.getElementById('textInput');
+      const textarea = document.getElementById('itemsInput');
       const autoResize = () => {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
@@ -81,76 +89,103 @@
       // Alpine data
       document.addEventListener('alpine:init', () => {
         Alpine.data('spill', () => ({
-          text: '30000 A\n27500 B\n8000 A, B\n\n72050',
+          total: '73150',
+          items: '30000 A\n27500 B\n9000 A, A, B',
+          error: null,
+          parsedData: null,
 
-          parsedData() {
-            const lines = this.text.split('\n');
+          compute() {
+            console.log('x');
+            try {
+              // Parse total
+              const total = parseInt(this.total.trim());
+              if (!(total > 0)) {
+                throw Error('Total is invalid');
+              }
 
-            if (lines.length < 3) {
-              throw Error('Incomplete data');
-            }
-            if (lines[lines.length - 2].trim() !== '') {
-              throw Error('Second last line needs to be empty');
-            }
-            const finalTotal = parseInt(lines[lines.length - 1].trim());
-            if (!(finalTotal > 0)) {
-              return Error('Total is in invalid format');
-            }
+              // Parse items
+              const peopleTotal = {};
+              let proratedTotal = 0;
+              const items = this.items
+                .split('\n')
+                .map((item) => item.trim().toUpperCase())
+                .filter((item) => item)
+                .map((item, itemIndex) => {
+                  const spaceIndex = item.indexOf(' ');
+                  if (spaceIndex < 0) {
+                    throw Error(`Item ${itemIndex + 1} is incomplete`);
+                  }
 
-            const peopleMap = {};
-            let proratedTotal = 0;
-            const items = lines.slice(0, lines.length - 2).map((line, lineIndex) => {
-              const spaceIndex = line.indexOf(' ');
-              if (spaceIndex < 0) {
-                return Error(`Incomplete item, on line: ${lineIndex + 1}`);
-              }
-              const amount = parseInt(line.slice(0, spaceIndex));
-              if (!(amount > 0)) {
-                return Error(`Amount is in invalid format, on line: ${lineIndex + 1}`);
-              }
-              const people = line
-                .slice(spaceIndex)
-                .toUpperCase()
-                .split(',')
-                .map((name) => name.trim())
-                .filter((name) => name);
-              if (!people.length) {
-                return Error(`No people names, on line: ${lineIndex + 1}`);
-              }
-              const proratedAmount = Math.round(amount / people.length);
-              people.forEach((person) => {
-                peopleMap[person] = peopleMap[person] || [];
-                peopleMap[person].push({
-                  line: lineIndex + 1,
-                  originalAmount: amount,
-                  prorateWith: people.length,
-                  proratedAmount: proratedAmount,
+                  // Parse price
+                  const price = parseInt(item.slice(0, spaceIndex));
+                  if (!(price > 0)) {
+                    throw Error(`Item ${itemIndex + 1} has invalid price`);
+                  }
+
+                  // Parse people
+                  const people = item
+                    .slice(spaceIndex)
+                    .split(',')
+                    .map((name) => name.trim())
+                    .filter((name) => name);
+                  const proratedPrice = Math.round(price / people.length);
+                  proratedTotal += proratedPrice * people.length;
+                  const result = {
+                    no: itemIndex + 1,
+                    price: price,
+                    priceWithFee: null,
+                    people: {}
+                  };
+                  people.forEach((person) => {
+                    result.people[person] = (result.people[person] || 0) + proratedPrice;
+                    peopleTotal[person] = 0;
+                  });
+                  return result;
                 });
-                proratedTotal += proratedAmount;
-              });
-            });
-            const feePercentage = Math.round(((finalTotal - proratedTotal) * 1000) / proratedTotal) / 10;
 
-            return Object.keys(peopleMap)
-              .sort()
-              .map((person) => {
-                const personSubtotal = peopleMap[person].reduce((acc, cur) => acc + cur.proratedAmount, 0);
-                const personFinalTotal = Math.round((personSubtotal * finalTotal) / proratedTotal);
-                console.log(personSubtotal, proratedTotal, finalTotal, personFinalTotal);
-                const personFeeTotal = personFinalTotal - personSubtotal;
-                return {
-                  name: person,
-                  items: peopleMap[person],
-                  subtotal: personSubtotal,
-                  feeTotal: personFeeTotal,
-                  feePercentage,
-                  finalTotal: personFinalTotal,
-                };
+              // Calculate and apply fee
+              let totalPrice = 0;
+              let totalPriceWithFee = 0;
+              const feePercentage = (total - proratedTotal) / proratedTotal;
+              items.forEach((item) => {
+                item.priceWithFee = Math.round(item.price * (1 + feePercentage));
+                Object.keys(item.people).forEach((person) => {
+                  item.people[person] = Math.round(item.people[person] * (1 + feePercentage));
+                  peopleTotal[person] += item.people[person];
+                });
+                totalPrice += item.price;
+                totalPriceWithFee += item.priceWithFee;
               });
+
+              this.error = null;
+              this.parsedData = {
+                people: Object.keys(peopleTotal).sort(),
+                feePercentage: Math.round(feePercentage * 1000) / 10,
+                items,
+                totalPrice,
+                totalPriceWithFee,
+                peopleTotal
+              };
+            }
+            catch (e) {
+              this.error = e.message;
+              this.parsedData = null;
+            }
+          },
+          clear() {
+            if (confirm('Are you sure?')) {
+              this.total = '';
+              this.items = '';
+            }
+          },
+          formatNumber(num) {
+            return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
           },
 
-          formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          init() {
+            this.compute();
+            this.$watch('total', () => this.compute());
+            this.$watch('items', () => this.compute());
           },
         }));
       });
