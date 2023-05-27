@@ -26,18 +26,18 @@
 
   <body class="bg-light-subtle">
     <div class="container" x-data="spill">
-      <h4 class="my-4 fw-bold">Split Bill</h4>
+      <div class="my-4">
+        <h1 class="fs-4 fw-bold">Split Bill</h1>
+        <h6 class="fs-7 text-secondary">Set total then list item price and people names</h6>
+      </div>
 
       <div class="mt-3">
-        <label for="totalInput" class="form-label">Total</label>
-        <input id="totalInput" type="number" class="form-control" x-model="total"></input>
+        <label for="totalInput" class="form-label fw-bold">Total</label>
+        <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
       </div>
       <div class="mt-3">
-        <label for="itemsInput" class="form-label">Items</label>
-        <textarea id="itemsInput" class="form-control" rows="5" x-model="items"></textarea>
-      </div>
-      <div class="mt-3">
-        <button type="button" class="btn btn-danger" @click="clear">Clear</button>
+        <label for="itemsInput" class="form-label fw-bold">Items</label>
+        <textarea id="itemsInput" class="form-control" rows="3" x-model="items" @focus="select"></textarea>
       </div>
 
       <div class="text-danger my-4" x-text="error" x-if="error"></div>
@@ -47,7 +47,7 @@
             <tr class="table-dark">
               <th class="text-start">NO.</th>
               <th>PRICE</th>
-              <th>+&nbsp;FEE&nbsp;(<span x-text="formatNumber(parsedData.feePercentage)"></span>%)</th>
+              <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(parsedData.feePercentage)"></span>%)</th>
               <template x-for="person in parsedData.people">
                 <th x-text="person"></th>
               </template>
@@ -67,7 +67,7 @@
               <th class="table-secondary" x-text="formatNumber(parsedData.totalPrice)"></th>
               <th class="table-secondary" x-text="formatNumber(parsedData.totalPriceWithFee)")></th>
               <template x-for="person in parsedData.people">
-                <th class="table-success" x-text="formatNumber(parsedData.peopleTotal[person])"></th>
+                <th class="table-warning" x-text="formatNumber(parsedData.peopleTotal[person])"></th>
               </template>
             </tr>
           </table>
@@ -90,15 +90,14 @@
       document.addEventListener('alpine:init', () => {
         Alpine.data('spill', () => ({
           total: '73150',
-          items: '30000 A\n27500 B\n9000 A A B',
+          items: '30000 ash\n27500 ash\n9000 ash roy roy',
           error: null,
           parsedData: null,
 
           compute() {
-            console.log('x');
             try {
               // Parse total
-              const total = parseInt(this.total.trim());
+              const total = Math.floor(this.total.trim());
               if (!(total > 0)) {
                 throw Error('Total is invalid');
               }
@@ -112,18 +111,18 @@
                 .filter((item) => item)
                 .map((item, itemIndex) => {
                   const args = item.split(' ').map((arg) => arg.trim()).filter((arg) => arg);
-                  if (args.length < 2) {
-                    throw Error(`Item ${itemIndex + 1} is incomplete`);
-                  }
 
                   // Parse price
-                  const price = parseInt(args[0]);
+                  const price = Math.floor(args[0]);
                   if (!(price > 0)) {
                     throw Error(`Item ${itemIndex + 1} has invalid price`);
                   }
 
                   // Parse people
                   const people = args.slice(1);
+                  if (args.length < 2) {
+                    throw Error(`Item ${itemIndex + 1} has no person name`);
+                  }
                   const proratedPrice = Math.round(price / people.length);
                   proratedTotal += proratedPrice * people.length;
                   const result = {
@@ -138,6 +137,9 @@
                   });
                   return result;
                 });
+              if (!items.length) {
+                throw Error(`Items are empty`);
+              }
 
               // Calculate and apply fee
               let totalPrice = 0;
@@ -168,11 +170,8 @@
               this.parsedData = null;
             }
           },
-          clear() {
-            if (confirm('Are you sure?')) {
-              this.total = '';
-              this.items = '';
-            }
+          select(e) {
+            e.target.select();
           },
           formatNumber(num) {
             return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
