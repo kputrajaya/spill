@@ -29,8 +29,7 @@
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
         <h6 class="fs-7 text-secondary">Set the amount to split, then list item prices and people's names</h6>
-      </div>
-
+      </div>      
       <div class="mt-3">
         <label for="totalInput" class="form-label fw-bold">Total</label>
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
@@ -71,10 +70,18 @@
               </template>
             </tr>
           </table>
-        </div>
+        </div>        
       </template>
-    </div>
+      <div class="mt-3">
+        <button type="button" class="btn btn-outline-primary" @click="share">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
+            <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
+          </svg>
+          Share
+        </button>        
+      </div>
 
+    </div>    
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
       // Text area auto-resize
@@ -164,6 +171,11 @@
                 totalPriceWithFee,
                 peopleTotal
               };
+
+              this.setQueryParams({
+                total: this.total,
+                items: this.items
+              })
             }
             catch (e) {
               this.error = e.message;
@@ -176,8 +188,41 @@
           formatNumber(num) {
             return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
           },
+          
+          // Share link using Web Share API        
+          async share(evt) {            
+            if (navigator.share) {
+              await navigator.share({                
+                url: location.href,
+              })              
+            }
+          },
 
-          init() {
+          getQueryParams() {
+            const params = {};
+            const search = window.location.search;
+            if (search) {
+              search.substr(1).split('&').forEach((param) => {
+                const [key, value] = param.split('=');
+                params[key] = decodeURIComponent(value);
+              });
+            }
+            return params;
+          },
+
+          setQueryParams(params) {
+            const search = Object.keys(params).map((key) => `${key}=${encodeURIComponent(params[key])}`).join('&');
+            window.history.replaceState(null, null, `?${search}`);
+          },
+
+          initParams() {
+            const params = this.getQueryParams();
+            this.total = params.total || this.total;
+            this.items = params.items || this.items;
+          },  
+
+          init() { 
+            this.initParams();
             this.compute();
             this.$watch('total', () => this.compute());
             this.$watch('items', () => this.compute());
