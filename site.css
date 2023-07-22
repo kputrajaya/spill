@@ -1,0 +1,11 @@
+.container {
+  max-width: 720px;
+}
+
+.fs-7 {
+  font-size: 0.8rem;
+}
+
+#itemsInput {
+  overflow: hidden;
+}
