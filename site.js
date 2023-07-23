@@ -89,6 +89,10 @@
             totalPriceWithFee,
             peopleTotal,
           };
+          this.setQueryParams({
+            total: this.total,
+            items: this.items,
+          });
         } catch (e) {
           this.error = e.message;
           this.parsedData = null;
@@ -101,7 +105,45 @@
         return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
       },
 
+      // Share link using Web Share API
+      async share(evt) {
+        if (navigator.share) {
+          await navigator.share({
+            url: location.href,
+          });
+        }
+      },
+
+      getQueryParams() {
+        const params = {};
+        const search = window.location.search;
+        if (search) {
+          search
+            .substr(1)
+            .split('&')
+            .forEach((param) => {
+              const [key, value] = param.split('=');
+              params[key] = decodeURIComponent(value);
+            });
+        }
+        return params;
+      },
+
+      setQueryParams(params) {
+        const search = Object.keys(params)
+          .map((key) => `${key}=${encodeURIComponent(params[key])}`)
+          .join('&');
+        window.history.replaceState(null, null, `?${search}`);
+      },
+
+      initParams() {
+        const params = this.getQueryParams();
+        this.total = params.total || this.total;
+        this.items = params.items || this.items;
+      },
+
       init() {
+        this.initParams();
         this.compute();
         this.$watch('total', () => this.compute());
         this.$watch('items', () => this.compute());
