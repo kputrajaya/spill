@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <title>Simple Split Bill</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="site.css" rel="stylesheet" />
   </head>
 
@@ -15,6 +15,7 @@
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
         <h6 class="fs-7 text-secondary">Set the amount to split, then list item prices and people's names</h6>
       </div>
+
       <div class="mt-3">
         <label for="totalInput" class="form-label fw-bold">Total</label>
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
@@ -23,51 +24,114 @@
         <label for="itemsInput" class="form-label fw-bold">Items</label>
         <textarea id="itemsInput" class="form-control" rows="3" x-model="items" @focus="select"></textarea>
       </div>
-
-      <div class="text-danger my-4" x-text="error" x-if="error"></div>
-      <template x-if="parsedData">
-        <div class="table-responsive my-4">
-          <table class="table table-sm fs-7 text-end bg-white">
-            <tr class="table-dark">
-              <th class="text-start">NO.</th>
-              <th>PRICE</th>
-              <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(parsedData.feePercentage)"></span>%)</th>
-              <template x-for="person in parsedData.people">
-                <th x-text="person"></th>
-              </template>
-            </tr>
-            <template x-for="item in parsedData.items">
-              <tr>
-                <td class="table-secondary text-start" x-text="item.no"></td>
-                <td class="table-secondary" x-text="formatNumber(item.price)"></td>
-                <td class="table-secondary" x-text="formatNumber(item.priceWithFee)"></td>
-                <template x-for="person in parsedData.people">
-                  <td x-text="formatNumber(item.people[person])"></td>
+      <div class="mt-3">
+        <label class="form-label fw-bold">Breakdown</label>
+        <div class="text-danger" x-text="error" x-if="error"></div>
+        <template x-if="billData">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 fs-7 text-end bg-white">
+              <tr class="table-dark">
+                <th class="text-start">NO.</th>
+                <th>PRICE</th>
+                <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData.feePercentage)"></span>%)</th>
+                <template x-for="person in billData.people">
+                  <th x-text="person"></th>
                 </template>
               </tr>
-            </template>
-            <tr>
-              <th class="table-secondary"></th>
-              <th class="table-secondary" x-text="formatNumber(parsedData.totalPrice)"></th>
-              <th class="table-secondary" x-text="formatNumber(parsedData.totalPriceWithFee)")></th>
-              <template x-for="person in parsedData.people">
-                <th class="table-warning" x-text="formatNumber(parsedData.peopleTotal[person])"></th>
+              <template x-for="item in billData.items">
+                <tr>
+                  <td class="table-secondary text-start" x-text="item.no"></td>
+                  <td class="table-secondary" x-text="formatNumber(item.price)"></td>
+                  <td class="table-secondary" x-text="formatNumber(item.priceWithFee)"></td>
+                  <template x-for="person in billData.people">
+                    <td x-text="formatNumber(item.people[person])"></td>
+                  </template>
+                </tr>
               </template>
-            </tr>
-          </table>
-        </div>
-      </template>
-      <div class="mt-3">
-        <button type="button" class="btn btn-outline-secondary" @click="share">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
+              <tr>
+                <th class="table-secondary"></th>
+                <th class="table-secondary" x-text="formatNumber(billData.totalPrice)"></th>
+                <th class="table-secondary" x-text="formatNumber(billData.totalPriceWithFee)")></th>
+                <template x-for="person in billData.people">
+                  <th class="table-warning" x-text="formatNumber(billData.peopleTotal[person])"></th>
+                </template>
+              </tr>
+            </table>
+          </div>
+        </template>
+      </div>
+      <div class="mt-4">
+        <button class="btn btn-sm btn-outline-secondary" type="button" @click="share">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share me-1" viewBox="0 0 16 16">
             <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
           </svg>
           Share
         </button>
       </div>
 
+      <div class="mt-4">
+        <div class="accordion" id="accordionMBR">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                data-bs-target="#collapseMBR">
+                Multi-Bill Resolution
+              </button>
+            </h2>
+            <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
+              <div class="accordion-body">
+                <div class="btn btn-sm btn-outline-secondary" @click="mbrSave">Save current bill</div>
+                <div class="btn btn-sm btn-link text-danger" @click="mbrClear">Clear</div>
+
+                <template x-if="mbrData.people.length">
+                  <div class="table-responsive">
+                    <table class="table table-sm mt-3 mb-0 fs-7 text-end bg-white">
+                      <tr class="table-dark">
+                        <th class="text-start">BILL</th>
+                        <template x-for="person in mbrData.people">
+                          <th x-text="person"></th>
+                        </template>
+                      </tr>
+                      <template x-for="bill in mbrData.bills">
+                        <tr>
+                          <td class="table-secondary text-start" x-text="formatNumber(bill.totalPriceWithFee)"></td>
+                          <template x-for="person in mbrData.people">
+                            <td>
+                              <span class="badge rounded-pill text-bg-secondary" x-show="bill.payer === person">P</span>
+                              <span x-text="bill.peopleTotal[person] ? formatNumber(bill.peopleTotal[person]) : ''"></span>
+                            </td>
+                          </template>
+                        </tr>
+                      </template>
+
+                      <tr class="table-dark">
+                        <th class="text-start">DEBT</th>
+                        <template x-for="person in mbrData.people">
+                          <th x-text="person"></th>
+                        </template>
+                      </tr>
+                      <template x-for="payer in mbrData.people">
+                        <tr>
+                          <th class="table-secondary text-start" x-text="payer"></th>
+                          <template x-for="payee in mbrData.people">
+                            <th class="table-warning"
+                              x-text="payer !== payee && mbrCompute(payer, payee) > 0 ? formatNumber(mbrCompute(payer, payee)) : ''"></th>
+                          </template>
+                        </tr>
+                      </template>
+                    </table>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="site.js"></script>
   </body>
 </html>
