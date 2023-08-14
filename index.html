@@ -13,7 +13,7 @@
     <div class="container" x-data="spill">
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
-        <h6 class="fs-7 text-secondary">Set the amount to split, then list item prices and people's names</h6>
+        <h6 class="fs-7 text-secondary">Set the total amount, then list prices and people's names</h6>
       </div>
 
       <div class="mt-3">
@@ -61,26 +61,21 @@
         </template>
       </div>
       <div class="mt-4">
-        <button class="btn btn-sm btn-outline-secondary" type="button" @click="share">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share me-1" viewBox="0 0 16 16">
-            <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
-          </svg>
-          Share
-        </button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279; Share</button>
       </div>
 
       <div class="my-4">
         <div class="accordion" id="accordionMBR">
           <div class="accordion-item">
             <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              <button class="accordion-button collapsed py-2 px-3 fs-7" type="button" data-bs-toggle="collapse"
                 data-bs-target="#collapseMBR">
-                Multi-Bill Resolution
+                Stack Bills
               </button>
             </h2>
             <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
               <div class="accordion-body">
-                <div class="btn btn-sm btn-outline-secondary" @click="mbrSave">Save current bill</div>
+                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190; Save Current</div>
                 <div class="btn btn-sm btn-link text-danger" @click="mbrClear">Clear</div>
 
                 <template x-if="mbrData.people.length">
@@ -105,7 +100,7 @@
                       </template>
 
                       <tr class="table-dark">
-                        <th class="text-start">DEBT</th>
+                        <th class="text-start">FROM</th>
                         <template x-for="person in mbrData.people">
                           <th x-text="person"></th>
                         </template>

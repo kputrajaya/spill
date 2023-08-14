@@ -1,12 +1,12 @@
 (function () {
   // Text area auto-resize
   const textarea = document.getElementById('itemsInput');
-  const autoResize = () => {
+  const resizeItemsInput = () => {
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
   };
-  textarea.addEventListener('input', autoResize, false);
-  autoResize();
+  textarea.addEventListener('input', resizeItemsInput, false);
+  resizeItemsInput();
 
   // Alpine data
   document.addEventListener('alpine:init', () => {
@@ -104,9 +104,13 @@
           }
         },
         async share() {
-          // Share link using Web Share API
           if (navigator.share) {
+            // Share link using Web Share API
             await navigator.share({ url: location.href });
+          } else if (navigator.clipboard) {
+            // Copy link to clipboard
+            navigator.clipboard.writeText(location.href);
+            alert('Link copied to clipboard!');
           }
         },
         mbrSave() {
@@ -142,6 +146,7 @@
           });
         },
         mbrClear() {
+          if (!confirm('Clear all bills?')) return;
           this.mbrData = { people: [], bills: [], map: {} };
         },
         mbrCompute(payer, payee) {
@@ -188,6 +193,7 @@
           this.compute();
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
+          setTimeout(resizeItemsInput, 0);
         },
       };
     });
