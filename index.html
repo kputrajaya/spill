@@ -9,7 +9,7 @@
     <link href="site.css" rel="stylesheet" />
   </head>
 
-  <body class="bg-light-subtle">
+  <body>
     <div class="container" x-data="spill">
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
@@ -21,7 +21,9 @@
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
       </div>
       <div class="mt-3">
-        <label for="itemsInput" class="form-label fw-bold">Items</label>
+        <label for="itemsInput" class="form-label fw-bold c-help" title="Line format: price ...people [-- comment]">
+          Items <span class="fw-normal">&#9432;</span>
+        </label>
         <textarea id="itemsInput" class="form-control" rows="3" x-model="items" @focus="select"></textarea>
       </div>
       <div class="mt-3">
@@ -29,7 +31,7 @@
         <div class="text-danger" x-text="error" x-if="error"></div>
         <template x-if="billData">
           <div class="table-responsive">
-            <table class="table table-sm mb-0 fs-7 text-end bg-white">
+            <table class="table table-sm table-bordered mb-0 fs-7 text-end bg-white">
               <tr class="table-dark">
                 <th>NO.</th>
                 <th>PRICE</th>
@@ -40,18 +42,18 @@
               </tr>
               <template x-for="item in billData.items">
                 <tr>
-                  <td class="table-secondary" x-text="item.no"></td>
-                  <td class="table-secondary" x-text="formatNumber(item.price)"></td>
-                  <td class="table-secondary" x-text="formatNumber(item.priceWithFee)"></td>
+                  <td class="table-light" x-text="item.no"></td>
+                  <td class="table-light" x-text="formatNumber(item.price)"></td>
+                  <td class="table-light" x-text="formatNumber(item.priceWithFee)"></td>
                   <template x-for="person in billData.people">
                     <td x-text="formatNumber(item.people[person])"></td>
                   </template>
                 </tr>
               </template>
               <tr>
-                <th class="table-secondary"></th>
-                <th class="table-secondary" x-text="formatNumber(billData.totalPrice)"></th>
-                <th class="table-secondary" x-text="formatNumber(billData.totalPriceWithFee)")></th>
+                <th class="table-light"></th>
+                <th class="table-light" x-text="formatNumber(billData.totalPrice)"></th>
+                <th class="table-light" x-text="formatNumber(billData.totalPriceWithFee)")></th>
                 <template x-for="person in billData.people">
                   <th class="table-warning" x-text="formatNumber(billData.peopleTotal[person])"></th>
                 </template>
@@ -76,12 +78,12 @@
             </h2>
             <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
               <div class="accordion-body">
-                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190; Save Current</div>
+                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190; Stack</div>
                 <div class="btn btn-sm btn-link text-danger" @click="mbrClear">Clear</div>
 
                 <template x-if="mbrData.people.length">
                   <div class="table-responsive">
-                    <table class="table table-sm mt-3 mb-0 fs-7 text-end bg-white">
+                    <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end bg-white">
                       <tr class="table-dark">
                         <th class="text-start">BILL</th>
                         <template x-for="person in mbrData.people">
@@ -90,7 +92,7 @@
                       </tr>
                       <template x-for="bill in mbrData.bills">
                         <tr>
-                          <td class="table-secondary text-start" x-text="formatNumber(bill.totalPriceWithFee)"></td>
+                          <td class="table-light text-start" x-text="formatNumber(bill.totalPriceWithFee)"></td>
                           <template x-for="person in mbrData.people">
                             <td>
                               <span class="badge rounded-pill text-bg-secondary" x-show="bill.payer === person">P</span>
@@ -108,9 +110,9 @@
                       </tr>
                       <template x-for="payer in mbrData.people">
                         <tr>
-                          <th class="table-secondary text-start" x-text="payer"></th>
+                          <th class="table-light text-start" x-text="payer"></th>
                           <template x-for="payee in mbrData.people">
-                            <th class="table-warning"
+                            <th :class="payer !== payee ? 'table-warning' : 'table-light'"
                               x-text="payer !== payee && mbrCompute(payer, payee) > 0 ? formatNumber(mbrCompute(payer, payee)) : ''"></th>
                           </template>
                         </tr>
