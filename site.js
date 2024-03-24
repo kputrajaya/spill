@@ -189,14 +189,14 @@
               .split('&')
               .forEach((param) => {
                 const [key, value] = param.split('=');
-                params[key] = decodeURIComponent(value);
+                params[key] = decodeURIComponent(value.replace(/\+/g, '%20').replace(/\|/g, '%0A'));
               });
           }
           return params;
         },
         setQueryParams(params) {
           const search = Object.keys(params)
-            .map((key) => `${key}=${encodeURIComponent(params[key])}`)
+            .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
             .join('&');
           window.history.replaceState(null, null, `?${search}`);
         },
