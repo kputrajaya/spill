@@ -129,15 +129,16 @@
           }
         },
         mbrSave() {
-          if (!this.billData || !this.billData.people.length) return;
+          const peopleCount = this.billData?.people?.length;
+          if (!peopleCount) return;
 
           // Ask for payer's name
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
-          const payerInput = prompt('Who paid this bill?\n' + nameList);
+          const payerInput = prompt(`Who paid this bill (1 - ${peopleCount})?\n${nameList}`);
           const payer = this.billData.people[Math.floor(payerInput) - 1];
           if (!payer) {
             if (payerInput) {
-              alert(`Please input number 1 - ${this.billData.people.length}!`);
+              alert(`Please input number 1 - ${peopleCount}!`);
             }
             return;
           }
