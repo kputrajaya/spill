@@ -31,7 +31,7 @@
           <div class="table-responsive">
             <table class="table table-sm mb-0 fs-7 text-end bg-white">
               <tr class="table-dark">
-                <th class="text-start">NO.</th>
+                <th>NO.</th>
                 <th>PRICE</th>
                 <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData.feePercentage)"></span>%)</th>
                 <template x-for="person in billData.people">
@@ -40,7 +40,7 @@
               </tr>
               <template x-for="item in billData.items">
                 <tr>
-                  <td class="table-secondary text-start" x-text="item.no"></td>
+                  <td class="table-secondary" x-text="item.no"></td>
                   <td class="table-secondary" x-text="formatNumber(item.price)"></td>
                   <td class="table-secondary" x-text="formatNumber(item.priceWithFee)"></td>
                   <template x-for="person in billData.people">
