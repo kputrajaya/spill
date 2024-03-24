@@ -108,7 +108,7 @@
             return;
           }
 
-          let text = `TOTAL: ${this.formatNumber(this.billData.totalPrice)}\r\n--`;
+          let text = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n--`;
           this.billData.people.forEach((person) => {
             const personTotal = this.billData.peopleTotal[person];
             if (personTotal > 0) {
