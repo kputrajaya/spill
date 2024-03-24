@@ -61,6 +61,7 @@
         </template>
       </div>
       <div class="mt-4">
+        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203; Copy</button>
         <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279; Share</button>
       </div>
 
@@ -100,7 +101,7 @@
                       </template>
 
                       <tr class="table-dark">
-                        <th class="text-start">FROM</th>
+                        <th class="text-start">INDEBTED</th>
                         <template x-for="person in mbrData.people">
                           <th x-text="person"></th>
                         </template>

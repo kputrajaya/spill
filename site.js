@@ -6,7 +6,6 @@
     textarea.style.height = textarea.scrollHeight + 'px';
   };
   textarea.addEventListener('input', resizeItemsInput, false);
-  resizeItemsInput();
 
   // Alpine data
   document.addEventListener('alpine:init', () => {
@@ -102,6 +101,22 @@
             this.error = e.message;
             this.billData = null;
           }
+        },
+        copy() {
+          if (!navigator.clipboard) {
+            alert('Cannot access clipboard!');
+            return;
+          }
+
+          let text = `TOTAL: ${this.formatNumber(this.billData.totalPrice)}\r\n--`;
+          this.billData.people.forEach((person) => {
+            const personTotal = this.billData.peopleTotal[person];
+            if (personTotal > 0) {
+              text += `\r\n${person}: ${this.formatNumber(personTotal)}`;
+            }
+          });
+          navigator.clipboard.writeText(text);
+          alert('Summary copied to clipboard!');
         },
         async share() {
           if (navigator.share) {
