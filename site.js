@@ -13,7 +13,7 @@
       return {
         // Data
         total: '73150',
-        items: '30000 ani\n27500 roy\n9000 ani roy roy -- Roy ate more than Ani',
+        items: '30000 ani\n27500 roy\n9000 ani roy roy -- Roy ate more',
         error: null,
         billData: null,
         mbrData: this.$persist({ people: [], bills: [], map: {} }),
