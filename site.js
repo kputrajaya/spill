@@ -102,12 +102,7 @@
             this.billData = null;
           }
         },
-        copy() {
-          if (!navigator.clipboard) {
-            alert('Cannot access clipboard!');
-            return;
-          }
-
+        async copy() {
           let text = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n--`;
           this.billData.people.forEach((person) => {
             const personTotal = this.billData.peopleTotal[person];
@@ -115,8 +110,31 @@
               text += `\r\n${person}: ${this.formatNumber(personTotal)}`;
             }
           });
-          navigator.clipboard.writeText(text);
-          alert('Summary copied to clipboard!');
+
+          // Copy using execCommand
+          const el = document.createElement('textarea');
+          el.style.opacity = 0;
+          document.body.appendChild(el);
+          el.value = text;
+          el.focus();
+          el.select();
+          const result = document.execCommand && document.execCommand('copy');
+          el.remove();
+          if (result === true) {
+            alert('Summary copied!');
+            return;
+          }
+
+          // Copy using navigator.clipboard
+          if (navigator.clipboard) {
+            try {
+              await navigator.clipboard.writeText(text);
+              alert('Summary copied!');
+              return;
+            } catch {}
+          }
+
+          alert('Cannot access clipboard!');
         },
         async share() {
           if (navigator.share) {
