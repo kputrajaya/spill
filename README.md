@@ -1,6 +1,6 @@
 # Spill
 
-Simple split bill tool that cares about your time.
+Simple bill splitter that cares about your time.
 
 ## Built With
 
