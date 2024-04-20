@@ -9,6 +9,11 @@
 
   // Alpine data
   document.addEventListener('alpine:init', () => {
+    const notyf = new Notyf({
+      ripple: false,
+      position: { x: 'center' },
+    });
+
     Alpine.data('spill', function () {
       return {
         // Data
@@ -121,7 +126,7 @@
           const result = document.execCommand && document.execCommand('copy');
           el.remove();
           if (result === true) {
-            alert('Summary copied!');
+            notyf.success('Summary copied!');
             return;
           }
 
@@ -129,12 +134,12 @@
           if (navigator.clipboard) {
             try {
               await navigator.clipboard.writeText(text);
-              alert('Summary copied!');
+              notyf.success('Summary copied!');
               return;
             } catch {}
           }
 
-          alert('Cannot access clipboard!');
+          notyf.error('Cannot access clipboard!');
         },
         async share() {
           if (navigator.share) {
@@ -143,7 +148,7 @@
           } else if (navigator.clipboard) {
             // Copy link to clipboard
             navigator.clipboard.writeText(location.href);
-            alert('Link copied to clipboard!');
+            new Notyf().success('Link copied!');
           }
         },
         mbrSave() {
@@ -158,7 +163,7 @@
           const payer = this.billData.people[Math.floor(payerInput) - 1];
           if (!payer) {
             if (payerInput) {
-              alert(`Please input number 1 - ${peopleCount}!`);
+              notyf.error(`Please input number 1 - ${peopleCount}!`);
             }
             return;
           }
