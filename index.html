@@ -153,7 +153,7 @@
                           <template x-for="payee in mbrData.people">
                             <th
                               :class="payer !== payee ? 'table-warning' : ''"
-                              x-text="payer !== payee && mbrCompute(payer, payee) > 0 ? formatNumber(mbrCompute(payer, payee)) : ''"
+                              x-text="payer !== payee ? formatNumber(mbrGetDebt(payer, payee)) : ''"
                             ></th>
                           </template>
                         </tr>

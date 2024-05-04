@@ -9,6 +9,49 @@
 
   // Alpine data
   document.addEventListener('alpine:init', () => {
+    const getQueryParams = () => {
+      const params = {};
+      const search = window.location.search;
+      if (search) {
+        search
+          .substring(1)
+          .split('&')
+          .forEach((param) => {
+            const [key, value] = param.split('=');
+            params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
+          });
+      }
+      return params;
+    };
+    const setQueryParams = (params) => {
+      const search = Object.keys(params)
+        .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
+        .join('&');
+      window.history.replaceState(null, null, `?${search}`);
+    };
+    const robustCopy = async (text) => {
+      // Copy using execCommand
+      const el = document.createElement('textarea');
+      el.style.opacity = 0;
+      document.body.appendChild(el);
+      el.value = text;
+      el.focus();
+      el.select();
+      const result = document.execCommand && document.execCommand('copy');
+      el.remove();
+      if (result === true) return true;
+
+      // Copy using navigator.clipboard
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {}
+      }
+
+      return false;
+    };
+
     const notyf = new Notyf({
       ripple: false,
       position: { x: 'center' },
@@ -102,7 +145,7 @@
               totalPriceWithFee,
               peopleTotal,
             };
-            this.setQueryParams({
+            setQueryParams({
               total: this.total,
               items: this.items,
             });
@@ -112,65 +155,47 @@
           }
         },
         async copy() {
-          let text = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n--`;
+          // Prepare summary
+          let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n--`;
           this.billData.people.forEach((person) => {
             const personTotal = this.billData.peopleTotal[person];
             if (personTotal > 0) {
-              text += `\r\n${person}: ${this.formatNumber(personTotal)}`;
+              summary += `\r\n${person}: ${this.formatNumber(personTotal)}`;
             }
           });
 
-          // Copy using execCommand
-          const el = document.createElement('textarea');
-          el.style.opacity = 0;
-          document.body.appendChild(el);
-          el.value = text;
-          el.focus();
-          el.select();
-          const result = document.execCommand && document.execCommand('copy');
-          el.remove();
-          if (result === true) {
+          // Copy summary to clipboard
+          const result = await robustCopy(summary);
+          if (result) {
             notyf.success('Summary copied!');
-            return;
+          } else {
+            notyf.error('Cannot access clipboard!');
           }
-
-          // Copy using navigator.clipboard
-          if (navigator.clipboard) {
-            try {
-              await navigator.clipboard.writeText(text);
-              notyf.success('Summary copied!');
-              return;
-            } catch {}
-          }
-
-          notyf.error('Cannot access clipboard!');
         },
         async share() {
           if (navigator.share) {
             // Share link using Web Share API
             await navigator.share({ url: location.href });
-          } else if (navigator.clipboard) {
+          } else {
             // Copy link to clipboard
-            navigator.clipboard.writeText(location.href);
-            new Notyf().success('Link copied!');
+            const result = await robustCopy(location.href);
+            if (result) {
+              notyf.success('Link copied!');
+            } else {
+              notyf.error('Cannot access clipboard!');
+            }
           }
         },
         mbrSave() {
           const peopleCount = this.billData?.people?.length;
           if (!peopleCount) return;
 
-          // Ask for payer's name
+          // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
-          const payerInput = prompt(
-            `Who paid the ${this.formatNumber(
-              this.billData.totalPriceWithFee
-            )} bill above (1 - ${peopleCount})?\n${nameList}`
-          );
+          const payerInput = prompt(`Who paid the bill above (1 - ${peopleCount})?\n${nameList}`);
           const payer = this.billData.people[Math.floor(payerInput) - 1];
           if (!payer) {
-            if (payerInput) {
-              notyf.error(`Please input number 1 - ${peopleCount}!`);
-            }
+            notyf.error(`Please input number 1 - ${peopleCount}!`);
             return;
           }
 
@@ -196,10 +221,10 @@
           if (!confirm('Remove all stacked bills?')) return;
           this.mbrData = { people: [], bills: [], map: {} };
         },
-        mbrCompute(payer, payee) {
-          const pay = (this.mbrData.map[payee] || {})[payer] || 0;
-          const receive = (this.mbrData.map[payer] || {})[payee] || 0;
-          return pay - receive;
+        mbrGetDebt(payer, payee) {
+          const toPay = (this.mbrData.map[payee] || {})[payer] || 0;
+          const toReceive = (this.mbrData.map[payer] || {})[payee] || 0;
+          return Math.max(0, toPay - toReceive);
         },
 
         // Helpers
@@ -209,34 +234,11 @@
         formatNumber(num) {
           return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
         },
-        getQueryParams() {
-          const params = {};
-          const search = window.location.search;
-          if (search) {
-            search
-              .substring(1)
-              .split('&')
-              .forEach((param) => {
-                const [key, value] = param.split('=');
-                params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-              });
-          }
-          return params;
-        },
-        setQueryParams(params) {
-          const search = Object.keys(params)
-            .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
-            .join('&');
-          window.history.replaceState(null, null, `?${search}`);
-        },
-        initQueryParams() {
-          const params = this.getQueryParams();
-          this.total = params.total || this.total;
-          this.items = params.items || this.items;
-        },
 
         init() {
-          this.initQueryParams();
+          const params = getQueryParams();
+          this.total = params.total || this.total;
+          this.items = params.items || this.items;
           this.compute();
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
