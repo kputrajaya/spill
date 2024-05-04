@@ -24,11 +24,11 @@
     <div class="container" x-data="spill">
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
-        <h6 class="fs-7 text-secondary">Just set the total amount then list the items</h6>
+        <h6 class="fs-7 text-secondary">Just put the grand total then list the items</h6>
       </div>
 
       <div class="mt-3">
-        <label for="totalInput" class="form-label fw-bold">Total</label>
+        <label for="totalInput" class="form-label fw-bold">Grand Total</label>
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
       </div>
       <div class="mt-3">
@@ -74,7 +74,7 @@
                 ></th>
                 <th
                   class="table-light c-help"
-                  title="Can differ from the total above due to rounding"
+                  title="Might differ from the total above due to rounding"
                   x-text="formatNumber(billData.totalPriceWithFee)"
                 ></th>
                 <template x-for="person in billData.people">
