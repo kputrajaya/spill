@@ -18,7 +18,7 @@
       return {
         // Data
         total: '73150',
-        items: '30000 ani\n27500 roy\n9000 ani roy roy -- Roy ate more',
+        items: '30000 ani\n27500 roy\n9000 ani roy roy',
         error: null,
         billData: null,
         mbrData: this.$persist({ people: [], bills: [], map: {} }),
@@ -162,7 +162,9 @@
           // Ask for payer's name
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
           const payerInput = prompt(
-            `Stack multiple bills to keep track of debts.\nWho paid this one (1 - ${peopleCount})?\n${nameList}`
+            `Who paid the ${this.formatNumber(
+              this.billData.totalPriceWithFee
+            )} bill above (1 - ${peopleCount})?\n${nameList}`
           );
           const payer = this.billData.people[Math.floor(payerInput) - 1];
           if (!payer) {
@@ -191,7 +193,7 @@
           });
         },
         mbrClear() {
-          if (!confirm('Clear all stacked bills?')) return;
+          if (!confirm('Remove all stacked bills?')) return;
           this.mbrData = { people: [], bills: [], map: {} };
         },
         mbrCompute(payer, payee) {
