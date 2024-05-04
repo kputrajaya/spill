@@ -212,7 +212,7 @@
               .split('&')
               .forEach((param) => {
                 const [key, value] = param.split('=');
-                params[key] = decodeURIComponent(value.replace(/\+/g, '%20').replace(/\|/g, '%0A'));
+                params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
               });
           }
           return params;
