@@ -26,10 +26,14 @@
         // Actions
         compute() {
           try {
+            if (this.items !== this.items.replace(/\+|\|/g, '')) {
+              throw Error('Cannot use "+" or "|" character');
+            }
+
             // Parse total
             const total = Math.floor(this.total.trim());
             if (!(total > 0)) {
-              throw Error('Total is invalid');
+              throw Error('Total amount is invalid');
             }
 
             // Parse items
@@ -48,13 +52,13 @@
                 // Parse price
                 const price = Math.floor(args[0]);
                 if (!(price > 0)) {
-                  throw Error(`Item ${itemIndex + 1} has invalid price`);
+                  throw Error(`Item ${itemIndex + 1} has an invalid price`);
                 }
 
                 // Parse people
                 const people = args.slice(1);
                 if (args.length < 2) {
-                  throw Error(`Item ${itemIndex + 1} has no person name`);
+                  throw Error(`Item ${itemIndex + 1} has no valid person name`);
                 }
                 const proratedPrice = Math.round(price / people.length);
                 proratedTotal += proratedPrice * people.length;
@@ -71,7 +75,7 @@
                 return result;
               });
             if (!items.length) {
-              throw Error('Items are empty');
+              throw Error('Items are still empty');
             }
 
             // Calculate and apply fee
