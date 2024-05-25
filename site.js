@@ -237,14 +237,17 @@
 
           // Prepare summary
           const total = this.mbrData.bills.reduce((acc, cur) => acc + cur.totalPriceWithFee, 0);
-          let summary = `STACK TOTAL: ${this.formatNumber(total)}\r===`;
+          let summary = `STACK: ${this.formatNumber(total)}\r===`;
           this.mbrData.people.forEach((payer) => {
+            let payeeList = '';
             this.mbrData.people.forEach((payee) => {
               const debt = payer !== payee ? this.mbrGetDebt(payer, payee) : 0;
               if (debt > 0) {
-                summary += `\r\n${payer} pays ${payee}: ${this.formatNumber(debt)}`;
+                payeeList += `\r\n- ${payee}: ${this.formatNumber(debt)}`;
               }
             });
+            if (!payeeList) return;
+            summary += `\r\n${payer} pays:` + payeeList;
           });
 
           // Copy summary to clipboard
