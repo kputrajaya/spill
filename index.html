@@ -24,7 +24,7 @@
     <div class="container" x-data="spill">
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Simple Split Bill</h1>
-        <h6 class="fs-7 text-secondary">Just put the grand total then list the items</h6>
+        <h6 class="fs-7 text-secondary">Simply put the grand total, then list the items</h6>
       </div>
 
       <div class="mt-3">
@@ -87,9 +87,9 @@
           </div>
         </template>
       </div>
-      <div class="mt-4">
-        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203; Copy Summary</button>
-        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279; Share Link</button>
+      <div class="mt-3">
+        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203;&nbsp;&nbsp;Summary</button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279;&nbsp;&nbsp;Link</button>
       </div>
 
       <div class="my-4">
@@ -99,16 +99,16 @@
               <button
                 class="accordion-button text-bg-light fs-7 py-2 px-3 collapsed"
                 type="button"
-                title="Save multiple bills in this device to be resolved later"
                 data-bs-toggle="collapse"
                 data-bs-target="#collapseMBR"
               >
-                Stack Bills<span class="ms-1 fw-normal">&#9432;</span>
+                <span class="badge text-bg-warning me-2">Advanced</span>
+                Stack Bills
               </button>
             </h2>
             <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
               <div class="accordion-body">
-                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190; Save Current</div>
+                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190;&nbsp;&nbsp;Save</div>
                 <div class="btn btn-sm btn-link text-danger" @click="mbrClear">Clear</div>
 
                 <template x-if="mbrData.people.length">
@@ -163,9 +163,9 @@
                       </template>
                     </table>
                     </div>
-                    <div class="mt-4">
+                    <div class="mt-3">
                       <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">
-                        &#128203; Copy Summary
+                        &#128203;&nbsp;&nbsp;Summary
                       </button>
                     </div>
                   </div>

@@ -198,7 +198,9 @@
 
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
-          const payerInput = prompt(`Who paid the bill above (1 - ${peopleCount})?\n${nameList}`);
+          const payerInput = prompt(
+            `Stacking the bill above to be resolved later. Who paid? (1 - ${peopleCount})?\n${nameList}`
+          );
           const payer = this.billData.people[Math.floor(payerInput) - 1];
           if (!payer) {
             notyf.error(`Please input number 1 - ${peopleCount}!`);
