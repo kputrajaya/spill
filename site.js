@@ -1,4 +1,48 @@
-(function () {
+(() => {
+  // Helper functions
+  const getQueryParams = () => {
+    const params = {};
+    const search = window.location.search;
+    if (search) {
+      search
+        .substring(1)
+        .split('&')
+        .forEach((param) => {
+          const [key, value] = param.split('=');
+          params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
+        });
+    }
+    return params;
+  };
+  const setQueryParams = (params) => {
+    const search = Object.keys(params)
+      .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
+      .join('&');
+    window.history.replaceState(null, null, `?${search}`);
+  };
+  const robustCopy = async (text) => {
+    // Copy using execCommand
+    const el = document.createElement('textarea');
+    el.style.opacity = 0;
+    document.body.appendChild(el);
+    el.value = text;
+    el.focus();
+    el.select();
+    const result = document.execCommand && document.execCommand('copy');
+    el.remove();
+    if (result === true) return true;
+
+    // Copy using navigator.clipboard
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+    }
+
+    return false;
+  };
+
   // Text area auto-resize
   const textarea = document.getElementById('itemsInput');
   const resizeItemsInput = () => {
@@ -7,56 +51,14 @@
   };
   textarea.addEventListener('input', resizeItemsInput, false);
 
+  // Initialize Notyf
+  const notyf = new Notyf({
+    ripple: false,
+    position: { x: 'center' },
+  });
+
   // Alpine data
   document.addEventListener('alpine:init', () => {
-    const getQueryParams = () => {
-      const params = {};
-      const search = window.location.search;
-      if (search) {
-        search
-          .substring(1)
-          .split('&')
-          .forEach((param) => {
-            const [key, value] = param.split('=');
-            params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-          });
-      }
-      return params;
-    };
-    const setQueryParams = (params) => {
-      const search = Object.keys(params)
-        .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
-        .join('&');
-      window.history.replaceState(null, null, `?${search}`);
-    };
-    const robustCopy = async (text) => {
-      // Copy using execCommand
-      const el = document.createElement('textarea');
-      el.style.opacity = 0;
-      document.body.appendChild(el);
-      el.value = text;
-      el.focus();
-      el.select();
-      const result = document.execCommand && document.execCommand('copy');
-      el.remove();
-      if (result === true) return true;
-
-      // Copy using navigator.clipboard
-      if (navigator.clipboard) {
-        try {
-          await navigator.clipboard.writeText(text);
-          return true;
-        } catch {}
-      }
-
-      return false;
-    };
-
-    const notyf = new Notyf({
-      ripple: false,
-      position: { x: 'center' },
-    });
-
     Alpine.data('spill', function () {
       return {
         // Data
@@ -84,7 +86,7 @@
             let proratedTotal = 0;
             const items = this.items
               .split('\n')
-              .map((item) => item.split('--')[0].trim().toUpperCase())
+              .map((item) => item.split('-')[0].trim().toUpperCase())
               .filter((item) => item)
               .map((item, itemIndex) => {
                 const args = item
@@ -155,8 +157,10 @@
           }
         },
         async copy() {
+          if (!this.billData?.people?.length) return;
+
           // Prepare summary
-          let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n--`;
+          let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\===`;
           this.billData.people.forEach((person) => {
             const personTotal = this.billData.peopleTotal[person];
             if (personTotal > 0) {
@@ -173,6 +177,8 @@
           }
         },
         async share() {
+          if (!this.billData?.people?.length) return;
+
           if (navigator.share) {
             // Share link using Web Share API
             await navigator.share({ url: location.href });
@@ -225,6 +231,29 @@
           const toPay = (this.mbrData.map[payee] || {})[payer] || 0;
           const toReceive = (this.mbrData.map[payer] || {})[payee] || 0;
           return Math.max(0, toPay - toReceive);
+        },
+        async mbrCopy() {
+          if (!this.mbrData?.people?.length) return;
+
+          // Prepare summary
+          const total = this.mbrData.bills.reduce((acc, cur) => acc + cur.totalPriceWithFee, 0);
+          let summary = `STACK TOTAL: ${this.formatNumber(total)}\r===`;
+          this.mbrData.people.forEach((payer) => {
+            this.mbrData.people.forEach((payee) => {
+              const debt = payer !== payee ? this.mbrGetDebt(payer, payee) : 0;
+              if (debt > 0) {
+                summary += `\r\n${payer} pays ${payee}: ${this.formatNumber(debt)}`;
+              }
+            });
+          });
+
+          // Copy summary to clipboard
+          const result = await robustCopy(summary);
+          if (result) {
+            notyf.success('Summary copied!');
+          } else {
+            notyf.error('Cannot access clipboard!');
+          }
         },
 
         // Helpers
