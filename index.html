@@ -37,7 +37,7 @@
           class="form-label fw-bold c-help"
           title="Line format: {price} {person 1} {person 2} - {optional comment}"
         >
-          Items<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+          Items<span class="ms-1 fw-normal opacity-75">&#9432;</span>
         </label>
         <textarea id="itemsInput" class="form-control" rows="3" x-model="items" @focus="select"></textarea>
       </div>
@@ -69,7 +69,7 @@
               </template>
               <tr>
                 <th class="table-light text-start c-help" title="Total with fee might differ due to rounding">
-                  TOTAL<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+                  TOTAL<span class="ms-1 fw-normal opacity-75">&#9432;</span>
                 </th>
                 <th class="table-light" x-text="formatNumber(billData?.totalPrice)"></th>
                 <th class="table-light" x-text="formatNumber(billData?.totalPriceWithFee)"></th>
@@ -138,7 +138,7 @@
                         </template>
                         <tr class="table-light">
                           <th class="text-start c-help" colspan="2" title="Total paid for others">
-                            CREDIT<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+                            CREDIT<span class="ms-1 fw-normal opacity-75">&#9432;</span>
                           </th>
                           <template x-for="balance in mbrListBalances()">
                             <th x-text="formatNumber(balance.credit)"></th>
@@ -146,7 +146,7 @@
                         </tr>
                         <tr class="table-light">
                           <th class="text-start c-help" colspan="2" title="Total owed to others">
-                            DEBT<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+                            DEBT<span class="ms-1 fw-normal opacity-75">&#9432;</span>
                           </th>
                           <template x-for="balance in mbrListBalances()">
                             <th x-text="formatNumber(balance.debt)"></th>
@@ -154,7 +154,7 @@
                         </tr>
                         <tr class="table-light">
                           <th class="text-start c-help" colspan="2" title="Credit - debt">
-                            BALANCE<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+                            BALANCE<span class="ms-1 fw-normal opacity-75">&#9432;</span>
                           </th>
                           <template x-for="balance in mbrListBalances()">
                             <th x-text="formatNumber(balance.credit - balance.debt)"></th>
@@ -167,7 +167,7 @@
                         class="form-label fw-bold c-help"
                         title="Settlement is optimized by comparing balances instead of settling individual bills"
                       >
-                        Settlement<span class="ms-1 fw-normal opacity-50">&#9432;</span>
+                        Settlement<span class="ms-1 fw-normal opacity-75">&#9432;</span>
                       </label>
                       <ul class="mb-0 fs-7">
                         <template x-for="transaction in mbrSettle()">
