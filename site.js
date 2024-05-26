@@ -42,6 +42,48 @@
 
     return false;
   };
+  const settleBalances = (balances) => {
+    // Separate creditors and debtors
+    let creditors = [];
+    let debtors = [];
+    balances.forEach((balance, idx) => {
+      if (balance > 0) {
+        creditors.push({ index: idx, amount: balance });
+      } else if (balance < 0) {
+        debtors.push({ index: idx, amount: -balance });
+      }
+    });
+
+    // Sort creditors and debtors
+    creditors.sort((a, b) => b.amount - a.amount);
+    debtors.sort((a, b) => b.amount - a.amount);
+
+    let transactions = [];
+
+    // Match debtors to creditors
+    let cIndex = 0;
+    let dIndex = 0;
+    while (cIndex < creditors.length && dIndex < debtors.length) {
+      let creditor = creditors[cIndex];
+      let debtor = debtors[dIndex];
+      let settledAmount = Math.min(creditor.amount, debtor.amount);
+      transactions.push({
+        from: debtor.index,
+        to: creditor.index,
+        amount: settledAmount,
+      });
+
+      // Adjust the amounts
+      creditor.amount -= settledAmount;
+      debtor.amount -= settledAmount;
+
+      // Move to the next creditor or debtor if fully settled
+      if (creditor.amount === 0) cIndex++;
+      if (debtor.amount === 0) dIndex++;
+    }
+
+    return transactions;
+  };
 
   // Text area auto-resize
   const textarea = document.getElementById('itemsInput');
@@ -66,7 +108,7 @@
         items: '30000 ani\n27500 roy\n9000 ani roy roy',
         error: null,
         billData: null,
-        mbrData: this.$persist({ people: [], bills: [], map: {} }),
+        mbrData: this.$persist({ people: [], bills: [] }),
 
         // Actions
         compute() {
@@ -160,7 +202,7 @@
           if (!this.billData?.people?.length) return;
 
           // Prepare summary
-          let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\===`;
+          let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n===`;
           this.billData.people.forEach((person) => {
             const personTotal = this.billData.peopleTotal[person];
             if (personTotal > 0) {
@@ -198,58 +240,64 @@
 
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
-          const payerInput = prompt(
-            `Stacking the bill above to be resolved later. Who paid? (1 - ${peopleCount})?\n${nameList}`
+          const payerNum = Math.floor(
+            prompt(`Stacking the bill above to be settled later. Who paid? (1 - ${peopleCount})?\n${nameList}`)
           );
-          const payer = this.billData.people[Math.floor(payerInput) - 1];
+          const payer = this.billData.people[payerNum - 1];
           if (!payer) {
             notyf.error(`Please input number 1 - ${peopleCount}!`);
             return;
           }
 
+          // Ask for bill note
+          const note = (prompt('Put an optional description for this bill:') || '').trim();
+
           // Record bill into MBR data
           this.mbrData.people = [...new Set([...this.mbrData.people, ...this.billData.people])].sort();
           this.mbrData.bills.push({
             payer,
+            note,
             totalPriceWithFee: this.billData.totalPriceWithFee,
             peopleTotal: this.billData.peopleTotal,
           });
 
-          // Recalculate payer-payee map
-          this.mbrData.map = {};
-          this.mbrData.bills.forEach((bill) => {
-            this.mbrData.map[bill.payer] = this.mbrData.map[bill.payer] || {};
-            Object.keys(bill.peopleTotal).forEach((person) => {
-              this.mbrData.map[bill.payer][person] = this.mbrData.map[bill.payer][person] || 0;
-              this.mbrData.map[bill.payer][person] += bill.peopleTotal[person];
-            });
-          });
+          notyf.success('Bill saved to stack!');
         },
         mbrClear() {
           if (!confirm('Remove all stacked bills?')) return;
-          this.mbrData = { people: [], bills: [], map: {} };
+          this.mbrData = { people: [], bills: [] };
+          notyf.success('Bills cleared!');
         },
-        mbrGetDebt(payer, payee) {
-          const toPay = (this.mbrData.map[payee] || {})[payer] || 0;
-          const toReceive = (this.mbrData.map[payer] || {})[payee] || 0;
-          return Math.max(0, toPay - toReceive);
+        mbrGetBalance() {
+          const balanceMap = {};
+          this.mbrData.bills.forEach((bill) => {
+            Object.keys(bill.peopleTotal).forEach((payee) => {
+              balanceMap[bill.payer] = balanceMap[bill.payer] || { credit: 0, debt: 0 };
+              balanceMap[bill.payer].credit += bill.peopleTotal[payee];
+              balanceMap[payee] = balanceMap[payee] || { credit: 0, debt: 0 };
+              balanceMap[payee].debt += bill.peopleTotal[payee];
+            });
+          });
+          const balanceList = this.mbrData.people.map((person) => balanceMap[person] || 0);
+          return balanceList;
+        },
+        mbrSettle() {
+          const balances = this.mbrGetBalance().map((person) => person.credit - person.debt);
+          const transactions = settleBalances(balances).map((transaction) => ({
+            from: this.mbrData.people[transaction.from],
+            to: this.mbrData.people[transaction.to],
+            amount: transaction.amount,
+          }));
+          return transactions;
         },
         async mbrCopy() {
           if (!this.mbrData?.people?.length) return;
 
           // Prepare summary
           const total = this.mbrData.bills.reduce((acc, cur) => acc + cur.totalPriceWithFee, 0);
-          let summary = `STACK: ${this.formatNumber(total)}\r===`;
-          this.mbrData.people.forEach((payer) => {
-            let payeeList = '';
-            this.mbrData.people.forEach((payee) => {
-              const debt = payer !== payee ? this.mbrGetDebt(payer, payee) : 0;
-              if (debt > 0) {
-                payeeList += `\r\n- ${payee}: ${this.formatNumber(debt)}`;
-              }
-            });
-            if (!payeeList) return;
-            summary += `\r\n${payer} pays:` + payeeList;
+          let summary = `STACK (${this.mbrData.bills.length}): ${this.formatNumber(total)}\r\n===`;
+          this.mbrSettle().forEach((transaction) => {
+            summary += `\r\n${transaction.from} -> ${transaction.to}: ${this.formatNumber(transaction.amount)}`;
           });
 
           // Copy summary to clipboard

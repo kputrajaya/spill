@@ -2,15 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
     <title>Simple Split Bill</title>
 
-    <link rel="icon" href="favicon-16.png" sizes="16x16">
-    <link rel="icon" href="favicon-32.png" sizes="32x32">
-    <link rel="icon" href="favicon-96.png" sizes="96x96">
+    <link rel="icon" href="favicon-16.png" sizes="16x16" />
+    <link rel="icon" href="favicon-32.png" sizes="32x32" />
+    <link rel="icon" href="favicon-96.png" sizes="96x96" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" rel="stylesheet" />
     <link href="site.css" rel="stylesheet" />
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
@@ -29,14 +29,10 @@
 
       <div class="mt-3">
         <label for="totalInput" class="form-label fw-bold">Grand Total</label>
-        <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select"></input>
+        <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select" />
       </div>
       <div class="mt-3">
-        <label
-          for="itemsInput"
-          class="form-label fw-bold c-help"
-          title="Format: {price} {person} {person} - {comment}"
-        >
+        <label for="itemsInput" class="form-label fw-bold c-help" title="Format: {price} {person} {person} - {comment}">
           Items<span class="ms-1 fw-normal">&#9432;</span>
         </label>
         <textarea id="itemsInput" class="form-control" rows="3" x-model="items" @focus="select"></textarea>
@@ -50,7 +46,7 @@
           <div class="table-responsive">
             <table class="table table-sm table-bordered mb-0 fs-7 text-end bg-white">
               <tr class="table-dark">
-                <th>NO.</th>
+                <th class="text-start">ITEM</th>
                 <th>PRICE</th>
                 <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData?.feePercentage)"></span>%)</th>
                 <template x-for="person in billData?.people">
@@ -59,7 +55,7 @@
               </tr>
               <template x-for="item in billData?.items">
                 <tr>
-                  <td class="table-light" x-text="item.no"></td>
+                  <td class="table-light text-start" x-text="item.no"></td>
                   <td class="table-light" x-text="formatNumber(item.price)"></td>
                   <td class="table-light" x-text="formatNumber(item.priceWithFee)"></td>
                   <template x-for="person in billData?.people">
@@ -68,7 +64,7 @@
                 </tr>
               </template>
               <tr>
-                <th class="table-light">TOTAL</th>
+                <th class="table-light text-start">TOTAL</th>
                 <th
                   class="table-light c-help"
                   title="Sum of item prices"
@@ -114,54 +110,71 @@
                 <template x-if="mbrData.people.length">
                   <div>
                     <div class="table-responsive">
-                    <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end bg-white">
-                      <tr class="table-dark">
-                        <th class="text-start">BILL</th>
-                        <template x-for="person in mbrData.people">
-                          <th x-text="person"></th>
-                        </template>
-                      </tr>
-                      <template x-for="bill in mbrData.bills">
-                        <tr>
-                          <td class="table-light text-start" x-text="formatNumber(bill.totalPriceWithFee)"></td>
+                      <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end bg-white">
+                        <tr class="table-dark">
+                          <th class="text-start">BILL</th>
+                          <th>TOTAL</th>
                           <template x-for="person in mbrData.people">
-                            <td>
-                              <span
-                                class="badge rounded-pill text-bg-secondary c-help"
-                                title="Paid this bill"
-                                x-show="bill.payer === person"
-                              >
-                                P
-                              </span>
-                              <span
-                                x-text="bill.peopleTotal[person] ? formatNumber(bill.peopleTotal[person]) : ''"
-                              ></span>
-                            </td>
+                            <th x-text="person"></th>
                           </template>
                         </tr>
-                      </template>
-
-                      <tr class="table-dark">
-                        <th class="text-start">RESOLUTION</th>
-                        <template x-for="person in mbrData.people">
-                          <th x-text="person"></th>
+                        <template x-for="(bill, billIndex) in mbrData.bills">
+                          <tr>
+                            <td class="table-light text-start" x-text="bill.note || billIndex + 1"></td>
+                            <td class="table-light" x-text="formatNumber(bill.totalPriceWithFee)"></td>
+                            <template x-for="person in mbrData.people">
+                              <td>
+                                <span
+                                  class="badge rounded-pill text-bg-secondary c-help"
+                                  title="This person paid this bill"
+                                  x-show="bill.payer === person"
+                                >
+                                  P
+                                </span>
+                                <span
+                                  x-text="bill.peopleTotal[person] ? formatNumber(bill.peopleTotal[person]) : ''"
+                                ></span>
+                              </td>
+                            </template>
+                          </tr>
                         </template>
-                      </tr>
-                      <template x-for="payer in mbrData.people">
-                        <tr>
-                          <th class="table-light text-start">
-                            <span x-text="payer"></span>
-                            <span class="fw-normal">pays</span>
-                          </th>
-                          <template x-for="payee in mbrData.people">
-                            <th
-                              :class="payer !== payee ? 'table-warning' : ''"
-                              x-text="payer !== payee ? formatNumber(mbrGetDebt(payer, payee)) : ''"
-                            ></th>
+                        <tr class="table-light">
+                          <th class="text-start c-help" colspan="2" title="Total paid for others">CREDIT</th>
+                          <template x-for="balance in mbrGetBalance()">
+                            <th x-text="formatNumber(balance.credit)"></th>
                           </template>
                         </tr>
-                      </template>
-                    </table>
+                        <tr class="table-light">
+                          <th class="text-start c-help" colspan="2" title="Total owed to others">DEBT</th>
+                          <template x-for="balance in mbrGetBalance()">
+                            <th x-text="formatNumber(balance.debt)"></th>
+                          </template>
+                        </tr>
+                        <tr class="table-light">
+                          <th class="text-start c-help" colspan="2" title="Credit - debt">BALANCE</th>
+                          <template x-for="balance in mbrGetBalance()">
+                            <th class="table-warning" x-text="formatNumber(balance.credit - balance.debt)"></th>
+                          </template>
+                        </tr>
+                      </table>
+                    </div>
+                    <div class="mt-3">
+                      <label
+                        class="form-label fw-bold c-help"
+                        title="Minimize transfers by matching top creditors with top debtors"
+                      >
+                        Settlement<span class="ms-1 fw-normal">&#9432;</span>
+                      </label>
+                      <ul class="fs-7">
+                        <template x-for="transaction in mbrSettle()">
+                          <li>
+                            <span class="fw-bold" x-text="transaction.from"></span>
+                            &rarr;
+                            <span class="fw-bold" x-text="transaction.to"></span>:
+                            <span x-text="formatNumber(transaction.amount)"></span>
+                          </li>
+                        </template>
+                      </ul>
                     </div>
                     <div class="mt-3">
                       <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">
