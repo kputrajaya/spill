@@ -246,17 +246,15 @@
           notyf.success('Bills cleared');
         },
         mbrListBalances() {
-          const balanceMap = {};
+          const balanceMap = Object.fromEntries(this.mbrData.people.map((person) => [person, { credit: 0, debt: 0 }]));
           this.mbrData.bills.forEach((bill) => {
             Object.keys(bill.peopleTotal).forEach((payee) => {
               if (bill.payer === payee) return;
-              balanceMap[bill.payer] = balanceMap[bill.payer] || { credit: 0, debt: 0 };
               balanceMap[bill.payer].credit += bill.peopleTotal[payee];
-              balanceMap[payee] = balanceMap[payee] || { credit: 0, debt: 0 };
               balanceMap[payee].debt += bill.peopleTotal[payee];
             });
           });
-          return this.mbrData.people.map((person) => balanceMap[person] || 0);
+          return this.mbrData.people.map((person) => balanceMap[person]);
         },
         mbrSettle() {
           const balances = this.mbrListBalances().map((person) => person.credit - person.debt);
