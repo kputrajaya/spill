@@ -26,7 +26,7 @@
 
       // Settle credits and debts efficiently
       const settleBalances = (balances) => {
-        // Separate creditors and debtors
+        // Separate creditors and debtors then sort them
         const creditors = [];
         const debtors = [];
         balances.forEach((balance, index) => {
@@ -36,27 +36,41 @@
             debtors.push({ index, amount: -balance });
           }
         });
+        creditors.sort((a, b) => b.amount - a.amount);
+        debtors.sort((a, b) => b.amount - a.amount);
 
-        // Record transactions
         const transactions = [];
-        while (true) {
-          // Match biggest remaining credit and debt
-          const creditor = creditors.sort((a, b) => b.amount - a.amount)[0];
-          const debtor = debtors.sort((a, b) => b.amount - a.amount)[0];
+        while (creditors.length && debtors.length) {
+          // Match the biggest credit and debt
+          const creditor = creditors[0];
+          const debtor = debtors[0];
+          const transaction = {
+            from: debtor.index,
+            to: creditor.index,
+            amount: Math.min(creditor.amount, debtor.amount),
+          };
+          transactions.push(transaction);
 
-          // Maximize transaction amount
-          const transactionAmount = Math.min(creditor.amount, debtor.amount);
-          if (transactionAmount === 0) {
-            if (creditor.amount > 0 || debtor.amount > 0) {
-              throw Error('Credits and debts are not equal');
-            }
-            break;
+          // Prepare the lists for the next pass
+          if (creditor.amount === transaction.amount) {
+            creditors.shift();
+          } else {
+            creditor.amount -= transaction.amount;
+            creditors.sort((a, b) => b.amount - a.amount);
           }
-
-          transactions.push({ from: debtor.index, to: creditor.index, amount: transactionAmount });
-          creditor.amount -= transactionAmount;
-          debtor.amount -= transactionAmount;
+          if (debtor.amount === transaction.amount) {
+            debtors.shift();
+          } else {
+            debtor.amount -= transaction.amount;
+            debtors.sort((a, b) => b.amount - a.amount);
+          }
         }
+
+        // The lists should both be empty
+        if (creditors.length || debtors.length) {
+          throw Error('Credits and debts are not balanced');
+        }
+
         return transactions;
       };
 
