@@ -1,106 +1,93 @@
 (() => {
-  // Helper functions
-  const getQueryParams = () => {
-    const params = {};
-    const search = window.location.search;
-    if (search) {
-      search
-        .substring(1)
-        .split('&')
-        .forEach((param) => {
-          const [key, value] = param.split('=');
-          params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-        });
-    }
-    return params;
-  };
-  const setQueryParams = (params) => {
-    const search = Object.keys(params)
-      .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
-      .join('&');
-    window.history.replaceState(null, null, `?${search}`);
-  };
-  const robustCopy = async (text) => {
-    // Copy using execCommand
-    const el = document.createElement('textarea');
-    el.style.opacity = 0;
-    document.body.appendChild(el);
-    el.value = text;
-    el.focus();
-    el.select();
-    const result = document.execCommand && document.execCommand('copy');
-    el.remove();
-    if (result === true) return true;
-
-    // Copy using navigator.clipboard
-    if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {}
-    }
-
-    return false;
-  };
-  const settleBalances = (balances) => {
-    // Separate creditors and debtors, then sort them
-    let creditors = [];
-    let debtors = [];
-    balances.forEach((balance, index) => {
-      if (balance > 0) {
-        creditors.push({ index, amount: balance });
-      } else if (balance < 0) {
-        debtors.push({ index, amount: -balance });
-      }
-    });
-    creditors.sort((a, b) => b.amount - a.amount);
-    debtors.sort((a, b) => b.amount - a.amount);
-
-    // Match creditors to debtors
-    let transactions = [];
-    let creditorIndex = 0;
-    let debtorIndex = 0;
-    while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
-      let creditor = creditors[creditorIndex];
-      let debtor = debtors[debtorIndex];
-
-      // Record transaction
-      let settledAmount = Math.min(creditor.amount, debtor.amount);
-      transactions.push({
-        from: debtor.index,
-        to: creditor.index,
-        amount: settledAmount,
-      });
-
-      // Calculate remaining amounts
-      creditor.amount -= settledAmount;
-      debtor.amount -= settledAmount;
-
-      // Move to the next creditor or debtor if fully settled
-      if (creditor.amount === 0) creditorIndex++;
-      if (debtor.amount === 0) debtorIndex++;
-    }
-
-    return transactions;
-  };
-
-  // Text area auto-resize
-  const textarea = document.getElementById('itemsInput');
-  const resizeItemsInput = () => {
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-  };
-  textarea.addEventListener('input', resizeItemsInput, false);
-
-  // Initialize Notyf
-  const notyf = new Notyf({
-    ripple: false,
-    position: { x: 'center' },
-  });
-
   // Alpine data
   document.addEventListener('alpine:init', () => {
     Alpine.data('spill', function () {
+      // Query params operations
+      const getParams = () => {
+        const params = {};
+        const search = window.location.search;
+        if (search) {
+          search
+            .substring(1)
+            .split('&')
+            .forEach((param) => {
+              const [key, value] = param.split('=');
+              params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
+            });
+        }
+        return params;
+      };
+      const setParams = (params) => {
+        const search = Object.keys(params)
+          .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
+          .join('&');
+        window.history.replaceState(null, null, `?${search}`);
+      };
+
+      // Settle credits and debts efficiently
+      const settleBalances = (balances) => {
+        // Separate creditors and debtors
+        const creditors = [];
+        const debtors = [];
+        balances.forEach((balance, index) => {
+          if (balance > 0) {
+            creditors.push({ index, amount: balance });
+          } else if (balance < 0) {
+            debtors.push({ index, amount: -balance });
+          }
+        });
+
+        // Record transactions
+        const transactions = [];
+        while (true) {
+          // Match biggest remaining credit and debt
+          const creditor = creditors.sort((a, b) => b.amount - a.amount)[0];
+          const debtor = debtors.sort((a, b) => b.amount - a.amount)[0];
+
+          // Maximize transaction amount
+          const transactionAmount = Math.min(creditor.amount, debtor.amount);
+          if (transactionAmount === 0) {
+            if (creditor.amount > 0 || debtor.amount > 0) {
+              throw Error('Credits and debts are not equal');
+            }
+            break;
+          }
+
+          transactions.push({ from: debtor.index, to: creditor.index, amount: transactionAmount });
+          creditor.amount -= transactionAmount;
+          debtor.amount -= transactionAmount;
+        }
+        return transactions;
+      };
+
+      const copyText = async (text) => {
+        // Copy using execCommand
+        const el = document.createElement('textarea');
+        el.style.opacity = 0;
+        document.body.appendChild(el);
+        el.value = text;
+        el.focus();
+        el.select();
+        const result = document.execCommand && document.execCommand('copy');
+        el.remove();
+        if (result === true) return true;
+
+        // Copy using navigator.clipboard
+        if (navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch {}
+        }
+
+        return false;
+      };
+
+      const notyf = new Notyf({
+        ripple: false,
+        position: { x: 'center' },
+      });
+
       return {
         // Data
         total: '73150',
@@ -188,7 +175,7 @@
               totalPriceWithFee,
               peopleTotal,
             };
-            setQueryParams({
+            setParams({
               total: this.total,
               items: this.items,
             });
@@ -209,28 +196,20 @@
             }
           });
 
-          // Copy summary to clipboard
-          const result = await robustCopy(summary);
-          if (result) {
-            notyf.success('Summary copied!');
-          } else {
-            notyf.error('Cannot access clipboard!');
-          }
+          // Copy to clipboard
+          const result = await copyText(summary);
+          result ? notyf.success('Summary copied') : notyf.error('Cannot access clipboard');
         },
         async share() {
           if (!this.billData?.people?.length) return;
 
           if (navigator.share) {
-            // Share link using Web Share API
+            // Share using Web Share API
             await navigator.share({ url: location.href });
           } else {
-            // Copy link to clipboard
-            const result = await robustCopy(location.href);
-            if (result) {
-              notyf.success('Link copied!');
-            } else {
-              notyf.error('Cannot access clipboard!');
-            }
+            // Copy to clipboard
+            const result = await copyText(location.href);
+            result ? notyf.success('Link copied') : notyf.error('Cannot access clipboard');
           }
         },
         mbrSave() {
@@ -244,7 +223,7 @@
           );
           const payer = this.billData.people[payerNum - 1];
           if (!payer) {
-            notyf.error(`Please input number 1 - ${peopleCount}!`);
+            notyf.error(`Please input number 1 - ${peopleCount}`);
             return;
           }
 
@@ -259,29 +238,28 @@
             totalPriceWithFee: this.billData.totalPriceWithFee,
             peopleTotal: this.billData.peopleTotal,
           });
-
-          notyf.success('Bill saved to stack!');
+          notyf.success('Bill saved to stack');
         },
         mbrClear() {
           if (!confirm('Remove all stacked bills?')) return;
           this.mbrData = { people: [], bills: [] };
-          notyf.success('Bills cleared!');
+          notyf.success('Bills cleared');
         },
-        mbrGetBalance() {
+        mbrListBalances() {
           const balanceMap = {};
           this.mbrData.bills.forEach((bill) => {
             Object.keys(bill.peopleTotal).forEach((payee) => {
+              if (bill.payer === payee) return;
               balanceMap[bill.payer] = balanceMap[bill.payer] || { credit: 0, debt: 0 };
               balanceMap[bill.payer].credit += bill.peopleTotal[payee];
               balanceMap[payee] = balanceMap[payee] || { credit: 0, debt: 0 };
               balanceMap[payee].debt += bill.peopleTotal[payee];
             });
           });
-          const balanceList = this.mbrData.people.map((person) => balanceMap[person] || 0);
-          return balanceList;
+          return this.mbrData.people.map((person) => balanceMap[person] || 0);
         },
         mbrSettle() {
-          const balances = this.mbrGetBalance().map((person) => person.credit - person.debt);
+          const balances = this.mbrListBalances().map((person) => person.credit - person.debt);
           const transactions = settleBalances(balances).map((transaction) => ({
             from: this.mbrData.people[transaction.from],
             to: this.mbrData.people[transaction.to],
@@ -294,18 +272,14 @@
 
           // Prepare summary
           const total = this.mbrData.bills.reduce((acc, cur) => acc + cur.totalPriceWithFee, 0);
-          let summary = `STACK (${this.mbrData.bills.length}): ${this.formatNumber(total)}\r\n===`;
+          let summary = `TOTAL (${this.mbrData.bills.length}): ${this.formatNumber(total)}\r\n===`;
           this.mbrSettle().forEach((transaction) => {
             summary += `\r\n${transaction.from} -> ${transaction.to}: ${this.formatNumber(transaction.amount)}`;
           });
 
-          // Copy summary to clipboard
-          const result = await robustCopy(summary);
-          if (result) {
-            notyf.success('Summary copied!');
-          } else {
-            notyf.error('Cannot access clipboard!');
-          }
+          // Copy to clipboard
+          const result = await copyText(summary);
+          result ? notyf.success('Summary copied') : notyf.error('Cannot access clipboard');
         },
 
         // Helpers
@@ -317,13 +291,29 @@
         },
 
         init() {
-          const params = getQueryParams();
+          // Restore from params
+          const params = getParams();
           this.total = params.total || this.total;
           this.items = params.items || this.items;
+
+          // Compute and watch
           this.compute();
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
-          setTimeout(resizeItemsInput, 0);
+
+          // Resize textarea and watch
+          const elItems = document.getElementById('itemsInput');
+          elItems.addEventListener(
+            'input',
+            (e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            },
+            false
+          );
+          setTimeout(() => {
+            elItems.dispatchEvent(new Event('input'));
+          }, 0);
         },
       };
     });
