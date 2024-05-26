@@ -43,29 +43,28 @@
     return false;
   };
   const settleBalances = (balances) => {
-    // Separate creditors and debtors
+    // Separate creditors and debtors, then sort them
     let creditors = [];
     let debtors = [];
-    balances.forEach((balance, idx) => {
+    balances.forEach((balance, index) => {
       if (balance > 0) {
-        creditors.push({ index: idx, amount: balance });
+        creditors.push({ index, amount: balance });
       } else if (balance < 0) {
-        debtors.push({ index: idx, amount: -balance });
+        debtors.push({ index, amount: -balance });
       }
     });
-
-    // Sort creditors and debtors
     creditors.sort((a, b) => b.amount - a.amount);
     debtors.sort((a, b) => b.amount - a.amount);
 
+    // Match creditors to debtors
     let transactions = [];
+    let creditorIndex = 0;
+    let debtorIndex = 0;
+    while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
+      let creditor = creditors[creditorIndex];
+      let debtor = debtors[debtorIndex];
 
-    // Match debtors to creditors
-    let cIndex = 0;
-    let dIndex = 0;
-    while (cIndex < creditors.length && dIndex < debtors.length) {
-      let creditor = creditors[cIndex];
-      let debtor = debtors[dIndex];
+      // Record transaction
       let settledAmount = Math.min(creditor.amount, debtor.amount);
       transactions.push({
         from: debtor.index,
@@ -73,13 +72,13 @@
         amount: settledAmount,
       });
 
-      // Adjust the amounts
+      // Calculate remaining amounts
       creditor.amount -= settledAmount;
       debtor.amount -= settledAmount;
 
       // Move to the next creditor or debtor if fully settled
-      if (creditor.amount === 0) cIndex++;
-      if (debtor.amount === 0) dIndex++;
+      if (creditor.amount === 0) creditorIndex++;
+      if (debtor.amount === 0) debtorIndex++;
     }
 
     return transactions;
