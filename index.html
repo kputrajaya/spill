@@ -118,12 +118,22 @@
                         </tr>
                         <template x-for="(bill, billIndex) in mbrData.bills">
                           <tr>
-                            <td class="table-light text-start" x-text="bill.note || billIndex + 1"></td>
+                            <td class="table-light text-start">
+                              <span x-text="bill.note"></span>
+                              <button
+                                type="button"
+                                class="badge rounded-pill text-bg-danger border-0 float-end"
+                                title="Delete this bill"
+                                @click="mbrDelete(billIndex)"
+                              >
+                                &#x2715;
+                              </button>
+                            </td>
                             <td class="table-light" x-text="formatNumber(bill.totalPriceWithFee)"></td>
                             <template x-for="person in mbrData.people">
                               <td>
                                 <span
-                                  class="badge rounded-pill text-bg-secondary c-help"
+                                  class="badge rounded-pill text-bg-secondary float-start c-help"
                                   title="This person paid this bill"
                                   x-show="bill.payer === person"
                                 >

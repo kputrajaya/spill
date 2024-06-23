@@ -1,4 +1,6 @@
 (() => {
+  window.onbeforeunload = () => 'Changes you made may not be saved.';
+
   // Alpine data
   document.addEventListener('alpine:init', () => {
     Alpine.data('spill', function () {
@@ -22,6 +24,14 @@
           .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
           .join('&');
         window.history.replaceState(null, null, `?${search}`);
+      };
+      const formatDate = (date) => {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = monthNames[date.getMonth()];
+        const day = date.getDate();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${month} ${day}, ${hours}:${minutes}`;
       };
 
       // Settle credits and debts efficiently
@@ -232,17 +242,19 @@
 
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
-          const payerNum = Math.floor(
-            prompt(`Stacking the bill above to be settled later. Who paid? (1 - ${peopleCount})?\n${nameList}`)
-          );
-          const payer = this.billData.people[payerNum - 1];
+          const payerInfo = (
+            prompt(`Stacking the bill above to be settled later. Who paid? (1 - ${peopleCount})?\n${nameList}`) || ''
+          ).toUpperCase();
+          const payer =
+            this.billData.people[Math.floor(payerInfo) - 1] ||
+            this.billData.people.find((person) => person === payerInfo);
           if (!payer) {
             notyf.error(`Please input number 1 - ${peopleCount}`);
             return;
           }
 
           // Ask for bill note
-          const note = (prompt('Put an optional description for this bill:') || '').trim();
+          const note = (prompt('Put an optional description for this bill:') || formatDate(new Date())).trim();
 
           // Record bill into MBR data
           this.mbrData.people = [...new Set([...this.mbrData.people, ...this.billData.people])].sort();
@@ -254,8 +266,12 @@
           });
           notyf.success('Bill saved to stack');
         },
+        mbrDelete(index) {
+          if (!confirm('Delete this bill?')) return;
+          this.mbrData.bills.splice(index, 1);
+        },
         mbrClear() {
-          if (!confirm('Remove all stacked bills?')) return;
+          if (!confirm('Delete all stacked bills?')) return;
           this.mbrData = { people: [], bills: [] };
           notyf.success('Bills cleared');
         },
