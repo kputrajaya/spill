@@ -1,5 +1,5 @@
 (() => {
-  window.onbeforeunload = () => 'Changes you made may not be saved.';
+  window.onunload = window.onbeforeunload = () => 'Changes you made may not be saved.';
 
   // Alpine data
   document.addEventListener('alpine:init', () => {
