@@ -119,7 +119,7 @@
                         <template x-for="(bill, billIndex) in mbrData.bills">
                           <tr>
                             <td class="table-light text-start">
-                              <span x-text="bill.note"></span>
+                              <span x-text="bill.note || (billIndex + 1)"></span>
                               <button
                                 type="button"
                                 class="badge rounded-pill text-bg-danger border-0 float-end"
