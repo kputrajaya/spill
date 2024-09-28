@@ -253,10 +253,10 @@
                   this.total = `${Math.floor(data.total)}`;
                   this.items = data.items.map(Math.floor).join('\n');
                   this.resizeTextArea();
-                  notyf.success('Image processed successfully');
+                  notyf.success('Data extracted successfully');
                 })
                 .catch((error) => {
-                  notyf.success('Failed to upload image');
+                  notyf.success('Failed to extract data');
                   console.log('Image uploaded error:', error);
                 })
                 .finally(() => {
