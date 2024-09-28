@@ -252,6 +252,7 @@
                   }
                   this.total = `${Math.floor(data.total)}`;
                   this.items = data.items.map(Math.floor).join('\n');
+                  this.people = data.items.map(() => '...').join('\n');
                   this.resizeTextArea();
                   notyf.success('Data extracted successfully');
                 })
