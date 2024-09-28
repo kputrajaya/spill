@@ -228,7 +228,7 @@
             img.src = URL.createObjectURL(file);
             img.onload = async () => {
               // Calculate new width and height
-              const maxLength = 1500;
+              const maxLength = 1200;
               const newWidth = img.width > img.height ? maxLength : Math.round((img.width / img.height) * maxLength);
               const newHeight = img.width > img.height ? Math.round((img.height / img.width) * maxLength) : maxLength;
 
