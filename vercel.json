@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/upload.py": {
+      "maxDuration": 30
+    }
+  }
+}
