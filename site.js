@@ -222,26 +222,47 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            const formData = new FormData();
-            formData.append('file', file);
-            fetch('/api/upload', { method: 'POST', body: formData })
-              .then((res) => res.json())
-              .then((data) => {
-                if (!data || !data.total || !data.items) {
-                  throw Error('Invalid JSON structure');
-                }
-                this.total = `${Math.floor(data.total)}`;
-                this.items = data.items.map(Math.floor).join('\n');
-                this.resizeTextArea();
-                notyf.success('Image processed successfully');
-              })
-              .catch((error) => {
-                notyf.success('Failed to upload image');
-                console.log('Image uploaded error:', error);
-              })
-              .finally(() => {
-                document.body.removeChild(fileInput);
-              });
+            notyf.success('Processing upload...');
+
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = async () => {
+              // Calculate new width and height
+              const maxLength = 2000;
+              const newWidth = img.width > img.height ? maxLength : Math.round((img.width / img.height) * maxLength);
+              const newHeight = img.width > img.height ? Math.round((img.height / img.width) * maxLength) : maxLength;
+
+              // Set canvas dimensions
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.min(img.width, newWidth);
+              canvas.height = Math.min(img.height, newHeight);
+
+              // Use Pica to resize the image
+              await pica().resize(img, canvas);
+              const blob = await pica().toBlob(canvas, 'image/jpeg', 0.7);
+
+              // Upload to API
+              const formData = new FormData();
+              formData.append('file', blob, file.name + '.resized.jpg');
+              fetch('/api/upload', { method: 'POST', body: formData })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (!data || !data.total || !data.items) {
+                    throw Error('Invalid JSON structure');
+                  }
+                  this.total = `${Math.floor(data.total)}`;
+                  this.items = data.items.map(Math.floor).join('\n');
+                  this.resizeTextArea();
+                  notyf.success('Image processed successfully');
+                })
+                .catch((error) => {
+                  notyf.success('Failed to upload image');
+                  console.log('Image uploaded error:', error);
+                })
+                .finally(() => {
+                  document.body.removeChild(fileInput);
+                });
+            };
           });
           fileInput.click();
         },

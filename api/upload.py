@@ -1,11 +1,9 @@
 import cgi
 from http.server import BaseHTTPRequestHandler
-from io import BytesIO
 import json
 import os
 
 import openai
-from PIL import Image
 import requests
 
 
@@ -24,13 +22,6 @@ class handler(BaseHTTPRequestHandler):
             return
         file_item = form_data['file']
 
-        # Resize image to maximum 2000x2000
-        image = Image.open(BytesIO(file_item.file.read()))
-        image.thumbnail((2000, 2000))
-        resized_image = BytesIO()
-        image.save(resized_image, format=image.format)
-        resized_image.seek(0)
-
         # Get token from Uplass
         url = 'https://uplass.kvn.ovh/token'
         data = {'AppKey': uplass_app_key, 'AppSecret': uplass_app_secret}
@@ -40,15 +31,16 @@ class handler(BaseHTTPRequestHandler):
             return
         token = response.text
 
-        # Upload resized image to Uplass
+        # Upload image to Uplass
         url = 'https://uplass.kvn.ovh/upload'
         data = {'token': token}
-        files = {'file': (file_item.filename, resized_image, file_item.type)}
+        files = {'file': (file_item.filename, file_item.file.read(), file_item.type)}
         response = requests.post(url, data=data, files=files)
         if response.status_code != 200:
             self.send_error(500, 'Failed to upload image')
             return
         image_url = response.text
+        print(f'Image uploaded to: {image_url}')
 
         # Extract data using ChatGPT
         try:
