@@ -13,6 +13,6 @@
   cursor: help;
 }
 
-#itemsInput {
+.list-input {
   overflow: hidden;
 }

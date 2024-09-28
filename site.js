@@ -1,10 +1,4 @@
 (() => {
-  window.addEventListener('beforeunload', (e) => {
-    e.preventDefault(); // This line is necessary for some browsers
-    e.returnValue = ''; // This line is necessary for others
-    return ''; // This ensures compatibility across browsers
-  });
-
   // Alpine data
   document.addEventListener('alpine:init', () => {
     Alpine.data('spill', function () {
@@ -119,7 +113,8 @@
       return {
         // Data
         total: '73150',
-        items: '30000 ani\n27500 roy\n9000 ani roy roy',
+        items: '30000\n27500\n9000',
+        people: 'ani\nroy\nani roy roy',
         error: null,
         billData: null,
         mbrData: this.$persist({ people: [], bills: [] }),
@@ -128,69 +123,72 @@
         compute() {
           try {
             if (this.items !== this.items.replace(/\+|\|/g, '')) {
-              throw Error('Cannot use "+" or "|" character');
+              throw Error('Cannot use restricted characters: "+", "|"');
             }
 
             // Parse total
             const total = Math.floor(this.total.trim());
             if (!(total > 0)) {
-              throw Error('Total amount is invalid');
+              throw Error('Total is not valid');
             }
 
-            // Parse items
-            const peopleTotal = {};
-            let proratedTotal = 0;
+            // Parse items (price) and people (array of names)
             const items = this.items
               .split('\n')
               .map((item) => item.split('-')[0].trim().toUpperCase())
               .filter((item) => item)
               .map((item, itemIndex) => {
-                const args = item
-                  .split(' ')
-                  .map((arg) => arg.trim())
-                  .filter((arg) => arg);
-
-                // Parse price
-                const price = Math.floor(args[0]);
+                const price = Math.floor(item);
                 if (!(price > 0)) {
                   throw Error(`Item ${itemIndex + 1} has an invalid price`);
                 }
-
-                // Parse people
-                const people = args.slice(1);
-                if (args.length < 2) {
-                  throw Error(`Item ${itemIndex + 1} has no valid person name`);
-                }
-                const proratedPrice = Math.round(price / people.length);
-                proratedTotal += proratedPrice * people.length;
-                const result = {
-                  no: itemIndex + 1,
-                  price: price,
-                  priceWithFee: null,
-                  people: {},
-                };
-                people.forEach((person) => {
-                  result.people[person] = (result.people[person] || 0) + proratedPrice;
-                  peopleTotal[person] = 0;
-                });
-                return result;
+                return price;
               });
             if (!items.length) {
-              throw Error('Items are still empty');
+              throw Error('Items is empty');
+            }
+            const people = this.people
+              .split('\n')
+              .map((people) => people.split('-')[0].trim().toUpperCase())
+              .filter((people) => people)
+              .map((people, peopleIndex) => {
+                const names = people
+                  .split(' ')
+                  .map((arg) => arg.trim())
+                  .filter((arg) => arg);
+                if (!names.length) {
+                  throw Error(`Item ${peopleIndex + 1} has no valid person name`);
+                }
+                return names;
+              });
+            if (!people.length) {
+              throw Error('People is empty');
+            }
+            if (items.length !== people.length) {
+              throw Error('Number of Items and People do not match');
             }
 
-            // Calculate and apply fee
+            // Calculate fee
+            const itemsTotal = items.reduce((sum, item) => sum + item, 0);
+            const feePercentage = (total - itemsTotal) / itemsTotal;
+            const peopleTotal = {};
             let totalPrice = 0;
             let totalPriceWithFee = 0;
-            const feePercentage = (total - proratedTotal) / proratedTotal;
-            items.forEach((item) => {
-              item.priceWithFee = Math.round(item.price * (1 + feePercentage));
-              Object.keys(item.people).forEach((person) => {
-                item.people[person] = Math.round(item.people[person] * (1 + feePercentage));
-                peopleTotal[person] += item.people[person];
+            const data = items.map((item, itemIndex) => {
+              const proratedPrice = Math.round(item / people[itemIndex].length);
+              const datum = {
+                no: itemIndex + 1,
+                price: item,
+                priceWithFee: Math.round(item * (1 + feePercentage)),
+                people: {},
+              };
+              people[itemIndex].forEach((person) => {
+                datum.people[person] = (datum.people[person] || 0) + Math.round(proratedPrice * (1 + feePercentage));
+                peopleTotal[person] = (peopleTotal[person] || 0) + Math.round(proratedPrice * (1 + feePercentage));
               });
-              totalPrice += item.price;
-              totalPriceWithFee += item.priceWithFee;
+              totalPrice += datum.price;
+              totalPriceWithFee += datum.priceWithFee;
+              return datum;
             });
 
             // Save to bill data
@@ -198,7 +196,7 @@
             this.billData = {
               people: Object.keys(peopleTotal).sort(),
               feePercentage: Math.round(feePercentage * 1000) / 10,
-              items,
+              items: data,
               totalPrice,
               totalPriceWithFee,
               peopleTotal,
@@ -206,6 +204,7 @@
             setParams({
               total: this.total,
               items: this.items,
+              people: this.people,
             });
           } catch (e) {
             this.error = e.message;
@@ -327,25 +326,28 @@
           const params = getParams();
           this.total = params.total || this.total;
           this.items = params.items || this.items;
+          this.people = params.people || this.people;
 
           // Compute and watch
           this.compute();
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
+          this.$watch('people', () => this.compute());
 
           // Resize textarea and watch
-          const elItems = document.getElementById('itemsInput');
-          elItems.addEventListener(
-            'input',
-            (e) => {
-              e.target.style.height = 'auto';
-              e.target.style.height = e.target.scrollHeight + 'px';
-            },
-            false
-          );
-          setTimeout(() => {
-            elItems.dispatchEvent(new Event('input'));
-          }, 0);
+          document.querySelectorAll('.list-input').forEach((el) => {
+            el.addEventListener(
+              'input',
+              (e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              },
+              false
+            );
+            setTimeout(() => {
+              el.dispatchEvent(new Event('input'));
+            }, 0);
+          });
         },
       };
     });
