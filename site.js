@@ -214,7 +214,7 @@
         uploadImage() {
           const fileInput = document.createElement('input');
           fileInput.type = 'file';
-          fileInput.accept = 'capture=camera,image/*';
+          fileInput.accept = 'image/*,text/plain';
           fileInput.style.display = 'none';
           document.body.appendChild(fileInput);
 
