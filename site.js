@@ -211,6 +211,40 @@
             this.billData = null;
           }
         },
+        uploadImage() {
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = 'image/*';
+          fileInput.style.display = 'none';
+          document.body.appendChild(fileInput);
+
+          fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            fetch('/api/upload', { method: 'POST', body: formData })
+              .then((res) => res.json())
+              .then((data) => {
+                if (!data || !data.total || !data.items) {
+                  throw Error('Invalid JSON structure');
+                }
+                this.total = `${Math.floor(data.total)}`;
+                this.items = data.items.map(Math.floor).join('\n');
+                this.resizeTextArea();
+                notyf.success('Image processed successfully');
+              })
+              .catch((error) => {
+                notyf.success('Failed to upload image');
+                console.log('Image uploaded error:', error);
+              })
+              .finally(() => {
+                document.body.removeChild(fileInput);
+              });
+          });
+          fileInput.click();
+        },
         async copy() {
           if (!this.billData?.people?.length) return;
 
@@ -320,6 +354,19 @@
         formatNumber(num) {
           return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
         },
+        resizeTextArea() {
+          setTimeout(() => {
+            const els = document.querySelectorAll('.list-input');
+            let maxHeight = 0;
+            els.forEach((el) => {
+              el.style.height = 'auto';
+              maxHeight = Math.max(maxHeight, el.scrollHeight);
+            });
+            els.forEach((el) => {
+              el.style.height = maxHeight + 'px';
+            });
+          }, 0);
+        },
 
         init() {
           // Restore from params
@@ -335,18 +382,9 @@
           this.$watch('people', () => this.compute());
 
           // Resize textarea and watch
+          this.resizeTextArea();
           document.querySelectorAll('.list-input').forEach((el) => {
-            el.addEventListener(
-              'input',
-              (e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
-              },
-              false
-            );
-            setTimeout(() => {
-              el.dispatchEvent(new Event('input'));
-            }, 0);
+            el.addEventListener('input', () => this.resizeTextArea(), false);
           });
         },
       };
