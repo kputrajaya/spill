@@ -206,8 +206,8 @@
               items: this.items,
               people: this.people,
             });
-          } catch (e) {
-            this.error = e.message;
+          } catch (err) {
+            this.error = err.message;
             this.billData = null;
           }
         },
@@ -218,8 +218,9 @@
           fileInput.style.display = 'none';
           document.body.appendChild(fileInput);
 
-          fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
+          fileInput.click();
+          fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
             if (!file) return;
 
             notyf.success('Processing upload...');
@@ -228,9 +229,9 @@
             img.src = URL.createObjectURL(file);
             img.onload = async () => {
               // Calculate new width and height
-              const maxLength = 1200;
-              const newWidth = img.width > img.height ? maxLength : Math.round((img.width / img.height) * maxLength);
-              const newHeight = img.width > img.height ? Math.round((img.height / img.width) * maxLength) : maxLength;
+              const maxPx = 1200;
+              const newWidth = img.width > img.height ? maxPx : Math.round((img.width / img.height) * maxPx);
+              const newHeight = img.width > img.height ? Math.round((img.height / img.width) * maxPx) : maxPx;
 
               // Set canvas dimensions
               const canvas = document.createElement('canvas');
@@ -243,29 +244,26 @@
 
               // Upload to API
               const formData = new FormData();
-              formData.append('file', blob, file.name + '.resized.jpg');
+              formData.append('file', blob, file.name + '.res.jpg');
               fetch('/api/upload', { method: 'POST', body: formData })
                 .then((res) => res.json())
                 .then((data) => {
-                  if (!data || !data.total || !data.items) {
-                    throw Error('Invalid JSON structure');
-                  }
-                  this.total = `${Math.floor(data.total)}`;
-                  this.items = data.items.map(Math.floor).join('\n');
+                  if (!data || !data.total || !data.items) throw new Error();
+                  this.total = `${Math.floor(data.total) || 0}`;
+                  this.items = data.items.map((item) => Math.floor(item) || 0).join('\n');
                   this.people = data.items.map(() => '...').join('\n');
                   this.resizeTextArea();
                   notyf.success('Data extracted successfully');
                 })
-                .catch((error) => {
+                .catch((err) => {
+                  console.log('Image uploaded error:', err);
                   notyf.success('Failed to extract data');
-                  console.log('Image uploaded error:', error);
                 })
                 .finally(() => {
                   document.body.removeChild(fileInput);
                 });
             };
           });
-          fileInput.click();
         },
         async copy() {
           if (!this.billData?.people?.length) return;
