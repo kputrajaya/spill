@@ -251,7 +251,13 @@
                 .then((data) => {
                   if (!data || !data.total || !data.items) throw new Error();
                   this.total = `${Math.floor(data.total) || 0}`;
-                  this.items = data.items.map((item) => `${Math.floor(item.amount) || 0} - ${item.name}`).join('\n');
+                  this.items = data.items
+                    .map((item) => {
+                      const amount = Math.floor(item.amount) || 0;
+                      const name = item.name.replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
+                      return `${amount} - ${name}`;
+                    })
+                    .join('\n');
                   this.people = '';
                   this.resizeTextArea();
                   notyf.success('Data extracted successfully');
