@@ -123,13 +123,13 @@
         compute() {
           try {
             if (this.items !== this.items.replace(/\+|\|/g, '')) {
-              throw Error('Cannot use restricted characters: "+", "|"');
+              throw Error('Do not use restricted characters: +|');
             }
 
             // Parse total
             const total = Math.floor(this.total.trim());
             if (!(total > 0)) {
-              throw Error('Total is not valid');
+              throw Error('Enter a valid total');
             }
 
             // Parse items (price) and people (array of names)
@@ -140,12 +140,12 @@
               .map((item, itemIndex) => {
                 const price = Math.floor(item);
                 if (!(price > 0)) {
-                  throw Error(`Item ${itemIndex + 1} has an invalid price`);
+                  throw Error(`Enter a valid price for item ${itemIndex + 1}`);
                 }
                 return price;
               });
             if (!items.length) {
-              throw Error('Items is empty');
+              throw Error('Fill in items information');
             }
             const people = this.people
               .split('\n')
@@ -157,15 +157,15 @@
                   .map((arg) => arg.trim())
                   .filter((arg) => arg);
                 if (!names.length) {
-                  throw Error(`Item ${peopleIndex + 1} has no valid person name`);
+                  throw Error(`Enter a valid name for item ${peopleIndex + 1}`);
                 }
                 return names;
               });
             if (!people.length) {
-              throw Error('People is empty');
+              throw Error('Fill in people information');
             }
             if (items.length !== people.length) {
-              throw Error('Number of Items and People do not match');
+              throw Error('Ensure the number of items and people match');
             }
 
             // Calculate fee
@@ -250,8 +250,8 @@
                 .then((data) => {
                   if (!data || !data.total || !data.items) throw new Error();
                   this.total = `${Math.floor(data.total) || 0}`;
-                  this.items = data.items.map((item) => Math.floor(item) || 0).join('\n');
-                  this.people = data.items.map(() => '...').join('\n');
+                  this.items = data.items.map((item) => `${Math.floor(item.amount) || 0} - ${item.name}`).join('\n');
+                  this.people = '';
                   this.resizeTextArea();
                   notyf.success('Data extracted successfully');
                 })

@@ -45,17 +45,21 @@ class handler(BaseHTTPRequestHandler):
         # Extract data using ChatGPT
         try:
             prompt = '''
-                Attached is a receipt image, which indicates a purchase.
-                Extract the grand total (including tax and charges).
-                Also extract the line items, only as amounts (row totals).
-                Format the result as an object, with 2 fields: "total" (number) and "items" (array of numbers).
-                Only return plain and minified JSON, which should be parseable (do not wrap in code blocks).
-                If the image is not a receipt, or no data can be extracted, respond with "Invalid image".
+                This is a receipt image, which should relate to a purchase.
+                Extract the grand total (including tax and charges) and the line items (names and row totals).
+                Format the result as an object, with 2 fields:
+                "total" (number) and "items" (array of objects with "name" and "amount" fields).
+                Only send plain minified JSON, which should be directly parseable (do not wrap in code blocks).
+                If the image is not a receipt, or no data can be extracted, respond with "Invalid".
 
-                Valid response:
+                Sample valid response:
                 {
                   "total": 73150,
-                  "items": [30000, 27500, 9000]
+                  "items": [
+                    {"name": "Porridge", "amount": 30000},
+                    {"name": "Noddle", "amount": 27500},
+                    {"name": "Coffee", "amount": 9000}
+                  ]
                 }
             '''
             client = openai.OpenAI(api_key=openai_api_key)
