@@ -392,9 +392,9 @@
         init() {
           // Restore from params
           const params = getParams();
-          this.total = params.total || this.total;
-          this.items = params.items || this.items;
-          this.people = params.people || this.people;
+          if (params.total != null) this.total = params.total;
+          if (params.items != null) this.items = params.items;
+          if (params.people != null) this.people = params.people;
 
           // Compute and watch
           this.compute();
