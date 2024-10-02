@@ -121,6 +121,12 @@
 
         // Actions
         compute() {
+          setParams({
+            total: this.total,
+            items: this.items,
+            people: this.people,
+          });
+
           try {
             if (this.items !== this.items.replace(/\+|\|/g, '')) {
               throw Error('Do not use restricted characters: +|');
@@ -201,11 +207,6 @@
               totalPriceWithFee,
               peopleTotal,
             };
-            setParams({
-              total: this.total,
-              items: this.items,
-              people: this.people,
-            });
           } catch (err) {
             this.error = err.message;
             this.billData = null;
