@@ -15,4 +15,5 @@
 
 .list-input {
   overflow: hidden;
+  resize: none;
 }

@@ -25,23 +25,25 @@
     <div class="container" x-data="spill">
       <div class="my-4">
         <h1 class="fs-4 fw-bold">Split Bill</h1>
-        <h6 class="fs-7 text-secondary">
-          Enter total and item prices (or <a href="#" @click.prevent="uploadImage()">take a receipt</a>), then map to
-          people.
-        </h6>
+        <h6 class="fs-7 text-secondary">Enter total paid and item prices, then map to respective people.</h6>
       </div>
-
-      <div class="mt-3">
-        <label for="totalInput" class="form-label fw-bold">Total Paid</label>
+      <div>
+        <label class="form-label fw-bold">Input</label>
+        <div>
+          <a href="#" class="btn btn-sm btn-warning" @click.prevent="uploadImage()">&#128195;&nbsp;Upload Receipt</a>
+        </div>
+      </div>
+      <div class="mt-2">
+        <label for="totalInput" class="form-label fs-7 fw-bold">Total</label>
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select" />
       </div>
-      <div class="row mt-3">
+      <div class="row mt-1 gx-1">
         <div class="col-6">
-          <label for="itemsInput" class="form-label fw-bold"> Items </label>
+          <label for="itemsInput" class="form-label fs-7 fw-bold"> Items </label>
           <textarea id="itemsInput" class="list-input form-control" rows="3" x-model="items" @focus="select"></textarea>
         </div>
         <div class="col-6">
-          <label for="peopleInput" class="form-label fw-bold"> People </label>
+          <label for="peopleInput" class="form-label fs-7 fw-bold"> People </label>
           <textarea
             id="peopleInput"
             class="list-input form-control"
@@ -92,8 +94,8 @@
         </template>
       </div>
       <div class="mt-3">
-        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203;&nbsp;Copy</button>
-        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279;&nbsp;Share</button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203;&nbsp;Summary</button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279;&nbsp;Link</button>
       </div>
 
       <div class="my-4">
@@ -190,7 +192,7 @@
                     </div>
                     <div class="mt-3">
                       <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">
-                        &#128203;&nbsp;Copy
+                        &#128203;&nbsp;Summary
                       </button>
                     </div>
                   </div>

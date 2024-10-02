@@ -223,7 +223,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            notyf.success('Processing upload...');
+            notyf.success('Processing, this might take a while');
 
             const img = new Image();
             img.src = URL.createObjectURL(file);
@@ -257,7 +257,7 @@
                 })
                 .catch((err) => {
                   console.log('Image uploaded error:', err);
-                  notyf.success('Failed to extract data');
+                  notyf.error('Failed to extract data');
                 })
                 .finally(() => {
                   document.body.removeChild(fileInput);

@@ -46,10 +46,11 @@ class handler(BaseHTTPRequestHandler):
         try:
             prompt = '''
                 This is a receipt image, which should relate to a purchase.
-                Extract the grand total (including tax and charges) and the line items (names and row totals).
-                Format the result as an object, with 2 fields:
-                "total" (number) and "items" (array of objects with "name" and "amount" fields).
-                Only send plain minified JSON, which should be directly parseable (do not wrap in code blocks).
+                Extract the grand total and the line items.
+                Format them as an object, with 2 fields:
+                - "total": number, including tax and charges
+                - "items": array of objects containing "name" (one-line string) and "amount" (number, row totals)
+                Only send plain minified JSON, which must be parseable (do not wrap in code blocks).
                 If the image is not a receipt, or no data can be extracted, respond with "Invalid".
 
                 Sample valid response:
