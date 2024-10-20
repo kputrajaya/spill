@@ -141,7 +141,7 @@
             // Parse items (price) and people (array of names)
             const items = this.items
               .split('\n')
-              .map((item) => item.split('-')[0].trim().toUpperCase())
+              .map((item) => item.trim().split(' ')[0])
               .filter((item) => item)
               .map((item, itemIndex) => {
                 const price = Math.floor(item);
@@ -155,13 +155,10 @@
             }
             const people = this.people
               .split('\n')
-              .map((people) => people.split('-')[0].trim().toUpperCase())
+              .map((people) => people.trim().toUpperCase())
               .filter((people) => people)
               .map((people, peopleIndex) => {
-                const names = people
-                  .split(' ')
-                  .map((arg) => arg.trim())
-                  .filter((arg) => arg);
+                const names = people.split(' ').filter((arg) => arg);
                 if (!names.length) {
                   throw Error(`Enter a valid name for item ${peopleIndex + 1}`);
                 }
