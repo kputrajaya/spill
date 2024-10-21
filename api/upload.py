@@ -48,18 +48,18 @@ class handler(BaseHTTPRequestHandler):
                 This is a receipt image, which should relate to a purchase.
                 Extract the grand total and the line items.
                 Format them as an object, with 2 fields:
-                - "total": number, including tax and charges
-                - "items": array of objects containing "name" (one-line string) and "amount" (number, row totals)
+                - "total": decimal string, including tax and charges
+                - "items": array of objects containing "name" (short string) and "amount" (decimal string, row totals)
                 Only send plain minified JSON, which must be parseable (do not wrap in code blocks).
                 If the image is not a receipt, or no data can be extracted, respond with "Invalid".
 
                 Sample valid response:
                 {
-                  "total": 73150,
+                  "total": "73150.00",
                   "items": [
-                    {"name": "Porridge", "amount": 30000},
-                    {"name": "Noddle", "amount": 27500},
-                    {"name": "Coffee", "amount": 9000}
+                    {"name": "Porridge", "amount": "30000.00"},
+                    {"name": "Noddle", "amount": "27500.00"},
+                    {"name": "Coffee", "amount": "9000.00"}
                   ]
                 }
             '''

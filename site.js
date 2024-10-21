@@ -37,6 +37,7 @@
         // Separate creditors and debtors then sort them
         const creditors = [];
         const debtors = [];
+        console.log(balances);
         balances.forEach((balance, index) => {
           if (balance > 0) {
             creditors.push({ index, amount: balance });
@@ -63,20 +64,15 @@
           if (creditor.amount === transaction.amount) {
             creditors.shift();
           } else {
-            creditor.amount -= transaction.amount;
+            creditor.amount = creditor.amount - transaction.amount;
             creditors.sort((a, b) => b.amount - a.amount);
           }
           if (debtor.amount === transaction.amount) {
             debtors.shift();
           } else {
-            debtor.amount -= transaction.amount;
+            debtor.amount = debtor.amount - transaction.amount;
             debtors.sort((a, b) => b.amount - a.amount);
           }
-        }
-
-        // The lists should both be empty
-        if (creditors.length || debtors.length) {
-          throw Error('Credits and debts are not balanced');
         }
 
         return transactions;
@@ -118,6 +114,7 @@
         error: null,
         billData: null,
         mbrData: this.$persist({ people: [], bills: [] }),
+        roundDecimals: this.$persist(true),
 
         // Actions
         compute() {
@@ -133,7 +130,7 @@
             }
 
             // Parse total
-            const total = Math.floor(this.total.trim());
+            const total = this.parseAmount(this.total.trim());
             if (!(total > 0)) {
               throw Error('Enter a valid total');
             }
@@ -144,7 +141,7 @@
               .map((item) => item.trim().split(' ')[0])
               .filter((item) => item)
               .map((item, itemIndex) => {
-                const price = Math.floor(item);
+                const price = this.parseAmount(item);
                 if (!(price > 0)) {
                   throw Error(`Enter a valid price for item ${itemIndex + 1}`);
                 }
@@ -178,16 +175,17 @@
             let totalPrice = 0;
             let totalPriceWithFee = 0;
             const data = items.map((item, itemIndex) => {
-              const proratedPrice = Math.round(item / people[itemIndex].length);
               const datum = {
                 no: itemIndex + 1,
-                price: item,
-                priceWithFee: Math.round(item * (1 + feePercentage)),
+                price: this.parseAmount(item),
+                priceWithFee: this.parseAmount(item * (1 + feePercentage)),
                 people: {},
               };
+              const proratedPrice = item / people[itemIndex].length;
               people[itemIndex].forEach((person) => {
-                datum.people[person] = (datum.people[person] || 0) + Math.round(proratedPrice * (1 + feePercentage));
-                peopleTotal[person] = (peopleTotal[person] || 0) + Math.round(proratedPrice * (1 + feePercentage));
+                const proratedPriceWithFee = proratedPrice * (1 + feePercentage);
+                datum.people[person] = this.parseAmount((datum.people[person] || 0) + proratedPriceWithFee);
+                peopleTotal[person] = this.parseAmount((peopleTotal[person] || 0) + proratedPriceWithFee);
               });
               totalPrice += datum.price;
               totalPriceWithFee += datum.priceWithFee;
@@ -200,8 +198,8 @@
               people: Object.keys(peopleTotal).sort(),
               feePercentage: Math.round(feePercentage * 1000) / 10,
               items: data,
-              totalPrice,
-              totalPriceWithFee,
+              totalPrice: this.parseAmount(totalPrice),
+              totalPriceWithFee: this.parseAmount(totalPriceWithFee),
               peopleTotal,
             };
           } catch (err) {
@@ -247,10 +245,10 @@
                 .then((res) => res.json())
                 .then((data) => {
                   if (!data || !data.total || !data.items) throw new Error();
-                  this.total = `${Math.floor(data.total) || 0}`;
+                  this.total = `${this.parseAmount(data.total)}`;
                   this.items = data.items
                     .map((item) => {
-                      const amount = Math.floor(item.amount) || 0;
+                      const amount = this.parseAmount(item.amount);
                       const name = item.name.replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
                       return `${amount} - ${name}`;
                     })
@@ -345,14 +343,16 @@
               balanceMap[payee].debt += bill.peopleTotal[payee];
             });
           });
-          return this.mbrData.people.map((person) => balanceMap[person]);
+          return this.mbrData.people.map((person) =>
+            this.parseAmount(balanceMap[person].credit - balanceMap[person].debt)
+          );
         },
         mbrSettle() {
-          const balances = this.mbrListBalances().map((person) => person.credit - person.debt);
+          const balances = this.mbrListBalances();
           const transactions = settleBalances(balances).map((transaction) => ({
             from: this.mbrData.people[transaction.from],
             to: this.mbrData.people[transaction.to],
-            amount: transaction.amount,
+            amount: this.parseAmount(transaction.amount),
           }));
           return transactions;
         },
@@ -375,8 +375,14 @@
         select(e) {
           e.target.select();
         },
+        parseAmount(amount) {
+          const parsed = parseFloat(amount) || 0;
+          const factor = this.roundDecimals ? 1 : 100;
+          return Math.round(parsed * factor) / factor;
+        },
         formatNumber(num) {
-          return num != null ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+          const decimals = this.roundDecimals ? 0 : 2;
+          return num != null ? num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
         },
         resizeTextArea() {
           setTimeout(() => {
@@ -404,6 +410,7 @@
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
           this.$watch('people', () => this.compute());
+          this.$watch('roundDecimals', () => this.compute());
 
           // Resize textarea and watch
           this.resizeTextArea();
