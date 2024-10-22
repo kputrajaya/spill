@@ -45,15 +45,17 @@ class handler(BaseHTTPRequestHandler):
         # Extract data using ChatGPT
         try:
             prompt = '''
-                This is a receipt image, which should relate to a purchase.
+                This is a receipt image, which should reflect a purchase.
                 Extract the grand total and the line items.
                 Format them as an object, with 2 fields:
-                - "total": decimal string, including tax and charges
-                - "items": array of objects containing "name" (short string) and "amount" (decimal string, row totals)
+                - "total": decimal-string, after tax and charges
+                - "items": array of objects containing "name" (string) and "amount" (decimal-string, row totals)
+                If there are 2 digits after a dot, then the dot is a decimal separator.
+                Otherwise, the dot is a thousands separator.
                 Only send plain minified JSON, which must be parseable (do not wrap in code blocks).
-                If the image is not a receipt, or no data can be extracted, respond with "Invalid".
+                If the image is not a receipt, or no data can be extracted, respond with "None".
 
-                Sample valid response:
+                Sample response:
                 {
                   "total": "73150.00",
                   "items": [
