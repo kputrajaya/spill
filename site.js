@@ -255,7 +255,7 @@
                     .join('\n');
                   this.people = '';
                   this.resizeTextArea();
-                  notyf.success('Data extracted successfully');
+                  notyf.success('Data extracted, please verify');
                 })
                 .catch((err) => {
                   console.log('Image uploaded error:', err);
