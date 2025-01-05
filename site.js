@@ -1,111 +1,107 @@
 (() => {
   // Alpine data
   document.addEventListener('alpine:init', () => {
-    Alpine.data('spill', function () {
-      // Query params operations
-      const getParams = () => {
-        const params = {};
-        const search = window.location.search;
-        if (search) {
-          search
-            .substring(1)
-            .split('&')
-            .forEach((param) => {
-              const [key, value] = param.split('=');
-              params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-            });
+    const notyf = new Notyf({
+      ripple: false,
+      position: { x: 'center' },
+    });
+
+    const getParams = () => {
+      const params = {};
+      const search = window.location.search;
+      if (search) {
+        search
+          .substring(1)
+          .split('&')
+          .forEach((param) => {
+            const [key, value] = param.split('=');
+            params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
+          });
+      }
+      return params;
+    };
+    const setParams = (params) => {
+      const search = Object.keys(params)
+        .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
+        .join('&');
+      window.history.replaceState(null, null, `?${search}`);
+    };
+    const formatDate = (date) => {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = monthNames[date.getMonth()];
+      const day = date.getDate();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${month} ${day}, ${hours}:${minutes}`;
+    };
+    const settleBalances = (balances) => {
+      // Separate creditors and debtors then sort them
+      const creditors = [];
+      const debtors = [];
+      console.log(balances);
+      balances.forEach((balance, index) => {
+        if (balance > 0) {
+          creditors.push({ index, amount: balance });
+        } else if (balance < 0) {
+          debtors.push({ index, amount: -balance });
         }
-        return params;
-      };
-      const setParams = (params) => {
-        const search = Object.keys(params)
-          .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
-          .join('&');
-        window.history.replaceState(null, null, `?${search}`);
-      };
-      const formatDate = (date) => {
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = monthNames[date.getMonth()];
-        const day = date.getDate();
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${month} ${day}, ${hours}:${minutes}`;
-      };
-
-      // Settle credits and debts efficiently
-      const settleBalances = (balances) => {
-        // Separate creditors and debtors then sort them
-        const creditors = [];
-        const debtors = [];
-        console.log(balances);
-        balances.forEach((balance, index) => {
-          if (balance > 0) {
-            creditors.push({ index, amount: balance });
-          } else if (balance < 0) {
-            debtors.push({ index, amount: -balance });
-          }
-        });
-        creditors.sort((a, b) => b.amount - a.amount);
-        debtors.sort((a, b) => b.amount - a.amount);
-
-        const transactions = [];
-        while (creditors.length && debtors.length) {
-          // Match the biggest credit and debt
-          const creditor = creditors[0];
-          const debtor = debtors[0];
-          const transaction = {
-            from: debtor.index,
-            to: creditor.index,
-            amount: Math.min(creditor.amount, debtor.amount),
-          };
-          transactions.push(transaction);
-
-          // Prepare the lists for the next pass
-          if (creditor.amount === transaction.amount) {
-            creditors.shift();
-          } else {
-            creditor.amount = creditor.amount - transaction.amount;
-            creditors.sort((a, b) => b.amount - a.amount);
-          }
-          if (debtor.amount === transaction.amount) {
-            debtors.shift();
-          } else {
-            debtor.amount = debtor.amount - transaction.amount;
-            debtors.sort((a, b) => b.amount - a.amount);
-          }
-        }
-
-        return transactions;
-      };
-
-      const copyText = async (text) => {
-        // Copy using execCommand
-        const el = document.createElement('textarea');
-        el.style.opacity = 0;
-        document.body.appendChild(el);
-        el.value = text;
-        el.focus();
-        el.select();
-        const result = document.execCommand && document.execCommand('copy');
-        el.remove();
-        if (result === true) return true;
-
-        // Copy using navigator.clipboard
-        if (navigator.clipboard) {
-          try {
-            await navigator.clipboard.writeText(text);
-            return true;
-          } catch {}
-        }
-
-        return false;
-      };
-
-      const notyf = new Notyf({
-        ripple: false,
-        position: { x: 'center' },
       });
+      creditors.sort((a, b) => b.amount - a.amount);
+      debtors.sort((a, b) => b.amount - a.amount);
 
+      const transactions = [];
+      while (creditors.length && debtors.length) {
+        // Match the biggest credit and debt
+        const creditor = creditors[0];
+        const debtor = debtors[0];
+        const transaction = {
+          from: debtor.index,
+          to: creditor.index,
+          amount: Math.min(creditor.amount, debtor.amount),
+        };
+        transactions.push(transaction);
+
+        // Prepare the lists for the next pass
+        if (creditor.amount === transaction.amount) {
+          creditors.shift();
+        } else {
+          creditor.amount = creditor.amount - transaction.amount;
+          creditors.sort((a, b) => b.amount - a.amount);
+        }
+        if (debtor.amount === transaction.amount) {
+          debtors.shift();
+        } else {
+          debtor.amount = debtor.amount - transaction.amount;
+          debtors.sort((a, b) => b.amount - a.amount);
+        }
+      }
+
+      return transactions;
+    };
+    const copyText = async (text) => {
+      // Use execCommand
+      const el = document.createElement('textarea');
+      el.style.opacity = 0;
+      document.body.appendChild(el);
+      el.value = text;
+      el.focus();
+      el.select();
+      const result = document.execCommand && document.execCommand('copy');
+      el.remove();
+      if (result === true) return true;
+
+      // Use navigator.clipboard
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {}
+      }
+
+      return false;
+    };
+
+    Alpine.data('spill', function () {
       return {
         // Data
         total: '73150',
