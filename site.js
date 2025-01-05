@@ -38,7 +38,6 @@
       // Separate creditors and debtors then sort them
       const creditors = [];
       const debtors = [];
-      console.log(balances);
       balances.forEach((balance, index) => {
         if (balance > 0) {
           creditors.push({ index, amount: balance });
