@@ -262,7 +262,7 @@
             };
           });
         },
-        async copy() {
+        async copySummary() {
           if (!this.billData?.people?.length) return;
 
           // Prepare summary
@@ -278,17 +278,12 @@
           const result = await copyText(summary);
           result ? notyf.success('Summary copied') : notyf.error('Cannot access clipboard');
         },
-        async share() {
+        async copyLink() {
           if (!this.billData?.people?.length) return;
 
-          if (navigator.share) {
-            // Share using Web Share API
-            await navigator.share({ url: location.href });
-          } else {
-            // Copy to clipboard
-            const result = await copyText(location.href);
-            result ? notyf.success('Link copied') : notyf.error('Cannot access clipboard');
-          }
+          // Copy to clipboard
+          const result = await copyText(location.href);
+          result ? notyf.success('Link copied') : notyf.error('Cannot access clipboard');
         },
         mbrSave() {
           const peopleCount = this.billData?.people?.length;

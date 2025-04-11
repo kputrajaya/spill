@@ -29,22 +29,18 @@
       </div>
       <div>
         <label class="form-label fs-5">Input</label>
-        <div>
-          <a href="#" class="btn btn-sm btn-warning" @click.prevent="uploadImage()">&#128195;&nbsp;Upload Receipt</a>
-          <span class="fs-7 text-secondary">or input manually</span>
-        </div>
       </div>
-      <div class="mt-2">
-        <label for="totalInput" class="form-label fs-7 fw-bold">Total</label>
+      <div>
+        <label for="totalInput" class="form-label mb-1 fs-7 fw-bold">Total</label>
         <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select" />
       </div>
       <div class="row mt-1 gx-1">
         <div class="col-6">
-          <label for="itemsInput" class="form-label fs-7 fw-bold"> Items </label>
+          <label for="itemsInput" class="form-label mb-1 fs-7 fw-bold"> Items </label>
           <textarea id="itemsInput" class="list-input form-control" rows="3" x-model="items" @focus="select"></textarea>
         </div>
         <div class="col-6">
-          <label for="peopleInput" class="form-label fs-7 fw-bold"> People </label>
+          <label for="peopleInput" class="form-label mb-1 fs-7 fw-bold"> People </label>
           <textarea
             id="peopleInput"
             class="list-input form-control"
@@ -65,7 +61,7 @@
         </template>
         <template x-if="billData">
           <div class="table-responsive">
-            <table class="table table-sm table-bordered mb-0 fs-7 text-end bg-white">
+            <table class="table table-sm table-bordered mb-0 fs-7 text-end text-nowrap bg-white">
               <tr class="table-dark">
                 <th class="text-start">ITEM</th>
                 <th>PRICE</th>
@@ -86,7 +82,7 @@
               </template>
               <tr>
                 <th class="table-light text-start c-help" title="Total with fee might differ due to rounding">
-                  TOTAL<span class="ms-1 fw-normal opacity-75">&#9432;</span>
+                  TOTAL<span class="fw-normal">&#10068;</span>
                 </th>
                 <th class="table-light" x-text="formatNumber(billData?.totalPrice)"></th>
                 <th class="table-light" x-text="formatNumber(billData?.totalPriceWithFee)"></th>
@@ -99,11 +95,11 @@
         </template>
       </div>
       <div class="mt-3">
-        <button class="btn btn-sm btn-secondary" type="button" @click="copy">&#128203;&nbsp;Summary</button>
-        <button class="btn btn-sm btn-secondary" type="button" @click="share">&#128279;&nbsp;Link</button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="copySummary">&#128203;&nbsp;Summary</button>
+        <button class="btn btn-sm btn-secondary" type="button" @click="copyLink">&#128279;&nbsp;Link</button>
       </div>
 
-      <div class="my-4">
+      <div class="mt-5 mb-4">
         <div class="accordion" id="accordionMBR">
           <div class="accordion-item">
             <h2 class="accordion-header">
@@ -125,7 +121,7 @@
                 <template x-if="mbrData.people.length">
                   <div>
                     <div class="table-responsive">
-                      <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end bg-white">
+                      <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end text-nowrap bg-white">
                         <tr class="table-dark">
                           <th class="text-start">BILL</th>
                           <th>TOTAL</th>
@@ -136,21 +132,21 @@
                         <template x-for="(bill, billIndex) in mbrData.bills">
                           <tr>
                             <td class="table-light text-start">
-                              <span x-text="bill.note || (billIndex + 1)"></span>
                               <button
                                 type="button"
-                                class="badge rounded-pill text-bg-danger border-0 float-end"
+                                class="badge rounded-pill text-bg-danger border-0"
                                 title="Delete this bill"
                                 @click="mbrDelete(billIndex)"
                               >
-                                &#x2715;
+                                &#10006;
                               </button>
+                              <span x-text="bill.note || (billIndex + 1)"></span>
                             </td>
                             <td class="table-light" x-text="formatNumber(bill.totalPriceWithFee)"></td>
                             <template x-for="person in mbrData.people">
                               <td>
                                 <span
-                                  class="badge rounded-pill text-bg-secondary float-start c-help"
+                                  class="badge rounded-pill text-bg-secondary c-help"
                                   title="This person paid the bill"
                                   x-show="bill.payer === person"
                                 >
@@ -169,7 +165,7 @@
                             colspan="2"
                             title="Positive means in credit, negative means in debt"
                           >
-                            BALANCE<span class="ms-1 fw-normal opacity-75">&#9432;</span>
+                            BALANCE<span class="fw-normal">&#10068;</span>
                           </th>
                           <template x-for="balance in mbrListBalances()">
                             <th x-text="formatNumber(balance)"></th>
@@ -179,10 +175,10 @@
                     </div>
                     <div class="alert alert-warning mt-3 text-black" role="alert">
                       <label
-                        class="form-label fs-7 fw-bold c-help"
+                        class="form-label mb-1 fs-7 fw-bold c-help"
                         title="Optimized by settling balances rather than individual bills"
                       >
-                        Settlement<span class="ms-1 fw-normal opacity-75">&#9432;</span>
+                        Settlement<span class="fw-normal">&#10068;</span>
                       </label>
                       <ul class="mb-0 fs-7">
                         <template x-for="transaction in mbrSettle()">
