@@ -45,8 +45,8 @@ class handler(BaseHTTPRequestHandler):
         # Extract data using ChatGPT
         try:
             prompt = '''
-                This is a receipt, which is related to a purchase.
-                Extract the item data (name and price of every line) and the grand total (the bottom amount).
+                This image is a receipt, which is related to a transaction.
+                Extract the item names and prices from every line (maintaining the order), along with the grand total.
 
                 Format the response as a valid JSON, which must be directly parseable (do not wrap in code blocks).
                 The response object must have 2 fields:
