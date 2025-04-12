@@ -68,7 +68,7 @@ class handler(BaseHTTPRequestHandler):
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
-                model='gpt-4o-mini',
+                model='gpt-4o',
                 messages=[
                     {
                         'role': 'user',
