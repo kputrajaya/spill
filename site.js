@@ -244,7 +244,7 @@
                   this.items = data.items
                     .map((item) => {
                       const amount = this.parseAmount(item.amount);
-                      const name = item.name.replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
+                      const name = (item.name || '').replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
                       return `${amount} - ${name}`;
                     })
                     .join('\n');

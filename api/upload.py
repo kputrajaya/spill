@@ -45,26 +45,24 @@ class handler(BaseHTTPRequestHandler):
         # Extract data using ChatGPT
         try:
             prompt = '''
-                This image is a receipt, which is related to a transaction.
-                Extract the item names and prices from every line (maintaining the order), along with the grand total.
+                This is an image of a printed purchase receipt.
+                Extract the item data and the grand total.
 
-                Format the response as a valid JSON, which must be directly parseable (do not wrap in code blocks).
-                The response object must have 2 fields:
-                  - "total": decimal-string
-                  - "items": array of objects containing "name" (string) and "amount" (decimal-string)
-
-                If there are 2 digits after a dot, then it's a decimal separator, else it's a thousands separator.
-                If the image is not a receipt or data extraction failed, respond with "None".
-
-                Sample response:
+                Respond in the following JSON format, which must be valid and clean:
+                ```
                 {
-                  "total": "73150.00",
+                  "total": "60500.00",
                   "items": [
-                    {"name": "Porridge", "amount": "30000.00"},
-                    {"name": "Noddle", "amount": "27500.00"},
-                    {"name": "Coffee", "amount": "9000.00"}
+                    {"name": "Noodle", "amount": "30000.00"},
+                    {"name": "Coffee", "amount": "25000.00"}
                   ]
                 }
+                ```
+
+                Preserve the order of items as shown in the receipt.
+                If there are 3 digits after a dot, it's a thousands separator.
+                If any field is not clearly present, use null.
+                Avoid guessing or hallucinating data.
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
