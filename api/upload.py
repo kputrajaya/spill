@@ -23,7 +23,7 @@ class handler(BaseHTTPRequestHandler):
         file_item = form_data['file']
 
         # Get token from Uplass
-        url = 'https://uplass.kvn.ovh/token'
+        url = 'https://uplass.kvn.pt/token'
         data = {'AppKey': uplass_app_key, 'AppSecret': uplass_app_secret}
         response = requests.post(url, json=data)
         if response.status_code != 200:
@@ -32,7 +32,7 @@ class handler(BaseHTTPRequestHandler):
         token = response.text
 
         # Upload image to Uplass
-        url = 'https://uplass.kvn.ovh/upload'
+        url = 'https://uplass.kvn.pt/upload'
         data = {'token': token}
         files = {'file': (file_item.filename, file_item.file.read(), file_item.type)}
         response = requests.post(url, data=data, files=files)
