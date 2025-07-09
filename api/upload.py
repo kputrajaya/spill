@@ -45,10 +45,10 @@ class handler(BaseHTTPRequestHandler):
         # Extract data using ChatGPT
         try:
             prompt = '''
-                This is an image of a printed purchase receipt.
-                Extract the item data and the grand total.
+                This is an image of a purchase receipt.
+                Extract the line item data and the grand total.
 
-                Respond in the following JSON format, which must be valid and clean:
+                Respond in the following JSON format, which must be valid, clean, and parseable:
                 ```
                 {
                   "total": "60500.00",
@@ -61,12 +61,12 @@ class handler(BaseHTTPRequestHandler):
 
                 Preserve the order of items as shown in the receipt.
                 If there are 3 digits after a dot, it's a thousands separator.
-                If any field is not clearly present, use null.
-                Avoid guessing or hallucinating data.
+                If any info is not clearly present, use null.
+                Do not guess or hallucinate.
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
-                model='gpt-4.1',
+                model='gpt-4.1-mini',
                 messages=[
                     {
                         'role': 'user',
