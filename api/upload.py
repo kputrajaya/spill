@@ -78,7 +78,14 @@ class handler(BaseHTTPRequestHandler):
                 ],
                 max_tokens=1024,
             )
-            items = json.loads(response.choices[0].message.content)
+
+            content = response.choices[0].message.content
+            try:
+                items = json.loads(content)
+            except json.JSONDecodeError:
+                error_message = f'Invalid JSON. Raw: {content}'
+                self.send_error(500, error_message)
+                return
 
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
