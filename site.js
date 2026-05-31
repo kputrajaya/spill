@@ -257,7 +257,10 @@
           fileInput.click();
         },
         async copySummary() {
-          if (!this.billData?.people?.length) return;
+          if (!this.billData?.people?.length) {
+            notyf.error('Bill is invalid!');
+            return;
+          }
 
           // Prepare summary
           let summary = `TOTAL: ${this.formatNumber(this.billData.totalPriceWithFee)}\r\n===`;
@@ -273,7 +276,10 @@
           result ? notyf.success('Split summary copied!') : notyf.error('Cannot access clipboard!');
         },
         async copyLink() {
-          if (!this.billData?.people?.length) return;
+          if (!this.billData?.people?.length) {
+            notyf.error('Bill is invalid!');
+            return;
+          }
 
           // Copy to clipboard
           const result = await copyText(location.href);
@@ -281,7 +287,10 @@
         },
         mbrSave() {
           const peopleCount = this.billData?.people?.length;
-          if (!peopleCount) return;
+          if (!peopleCount) {
+            notyf.error('Bill is invalid!');
+            return;
+          }
 
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
