@@ -13,9 +13,9 @@
       const search = window.location.search;
       if (search) {
         search.substring(1).split('&').forEach((param) => {
-          const idx = param.indexOf('=');
-          if (idx === -1) return;
-          params[param.slice(0, idx)] = decodeURIComponent(param.slice(idx + 1));
+          const i = param.indexOf('=');
+          if (i === -1) return;
+          params[param.slice(0, i)] = decodeURIComponent(param.slice(i + 1)).replace(/\+/g, ' ').replace(/\|/g, '\n');
         });
       }
       return params;
