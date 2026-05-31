@@ -56,7 +56,13 @@
         <label class="form-check-label" for="roundDecimalsCheck">Round decimals</label>
       </div>
       <div class="mt-4">
-        <label class="form-label fs-5">Output</label>
+        <div class="d-flex justify-content-between align-items-center">
+          <label class="form-label fs-5">Output</label>
+          <div class="mb-2">
+            <button class="btn btn-sm btn-secondary" type="button" @click="copySummary">&#128203;&nbsp;Summary</button>
+            <button class="btn btn-sm btn-secondary" type="button" @click="copyLink">&#128279;&nbsp;Link</button>
+          </div>
+        </div>
         <template x-if="error">
           <div class="text-danger" x-text="error"></div>
         </template>
@@ -66,7 +72,7 @@
               <tr class="table-dark">
                 <th class="text-start">ITEM</th>
                 <th>PRICE</th>
-                <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData?.feePercentage)"></span>%)</th>
+                <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData?.feePercentage, 0)"></span>%)</th>
                 <template x-for="person in billData?.people">
                   <th x-text="person"></th>
                 </template>
@@ -95,11 +101,6 @@
           </div>
         </template>
       </div>
-      <div class="mt-3">
-        <button class="btn btn-sm btn-secondary" type="button" @click="copySummary">&#128203;&nbsp;Summary</button>
-        <button class="btn btn-sm btn-secondary" type="button" @click="copyLink">&#128279;&nbsp;Link</button>
-      </div>
-
       <div class="mt-5 mb-4">
         <div class="accordion" id="accordionMBR">
           <div class="accordion-item">
@@ -116,31 +117,30 @@
             </h2>
             <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
               <div class="accordion-body">
-                <div class="btn btn-sm btn-secondary" @click="mbrSave">&#128190;&nbsp;Save</div>
-                <div class="btn btn-sm btn-link text-danger" @click="mbrClear">Clear</div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <label class="form-label fs-5">Bills</label>
+                  <div class="mb-2">
+                    <button class="btn btn-sm btn-secondary" type="button" @click="mbrSave">&#128190;&nbsp;Save Current</button>
+                    <button class="btn btn-sm btn-secondary" type="button" @click="mbrClear">&#128465;&nbsp;Clear</button>
+                  </div>
+                </div>
 
-                <template x-if="mbrData.people.length">
+                <div class="text-secondary" x-show="!mbrData.bills.length">Start by saving the current bill</div>
+                <template x-if="mbrData.bills.length">
                   <div>
                     <div class="table-responsive">
-                      <table class="table table-sm table-bordered mt-3 mb-0 fs-7 text-end text-nowrap bg-white">
+                      <table class="table table-sm table-bordered mb-0 fs-7 text-end text-nowrap bg-white">
                         <tr class="table-dark">
                           <th class="text-start">BILL</th>
                           <th>TOTAL</th>
                           <template x-for="person in mbrData.people">
                             <th x-text="person"></th>
                           </template>
+                          <th class="text-center" style="width:1%">ACTION</th>
                         </tr>
                         <template x-for="(bill, billIndex) in mbrData.bills">
                           <tr>
                             <td class="table-light text-start">
-                              <button
-                                type="button"
-                                class="badge rounded-pill text-bg-danger border-0"
-                                title="Delete this bill"
-                                @click="mbrDelete(billIndex)"
-                              >
-                                &#10006;
-                              </button>
                               <span x-text="bill.note || (billIndex + 1)"></span>
                             </td>
                             <td class="table-light" x-text="formatNumber(bill.totalPriceWithFee)"></td>
@@ -158,44 +158,59 @@
                                 ></span>
                               </td>
                             </template>
+                            <td class="table-light text-center">
+                              <button
+                                type="button"
+                                class="badge rounded-pill text-bg-danger border-0"
+                                title="Delete this bill"
+                                @click="mbrDelete(billIndex)"
+                              >
+                                &#10006;
+                              </button>
+                            </td>
                           </tr>
                         </template>
                         <tr class="table-light">
-                          <th
-                            class="text-start c-help"
-                            colspan="2"
-                            title="Positive means in credit, negative means in debt"
-                          >
-                            BALANCE<span class="fw-normal">&#10068;</span>
-                          </th>
-                          <template x-for="balance in mbrListBalances()">
-                            <th x-text="formatNumber(balance)"></th>
+                          <th class="text-start">TOTAL SPENT</th>
+                          <th class="align-middle" rowspan="3" x-text="formatNumber(mbrComputed.totalSpentAll)"></th>
+                          <template x-for="spent in mbrComputed.listTotalSpent">
+                            <th class="table-warning" x-text="formatNumber(spent)"></th>
+                          </template>
+                          <th rowspan="3"></th>
+                        </tr>
+                        <tr class="table-light">
+                          <th class="text-start">TOTAL PAID</th>
+                          <template x-for="paid in mbrComputed.listTotalPaid">
+                            <th class="table-warning" x-text="formatNumber(paid)"></th>
+                          </template>
+                        </tr>
+                        <tr class="table-light">
+                          <th class="text-start">BALANCE</th>
+                          <template x-for="balance in mbrComputed.listBalances">
+                            <th class="table-warning" x-text="formatNumber(balance)"></th>
                           </template>
                         </tr>
                       </table>
                     </div>
-                    <div class="alert alert-warning mt-3 text-black" role="alert">
-                      <label
-                        class="form-label mb-1 fs-7 fw-bold c-help"
-                        title="Optimized by settling balances rather than individual bills"
-                      >
-                        Settlement<span class="fw-normal">&#10068;</span>
-                      </label>
-                      <ul class="mb-0 fs-7">
-                        <template x-for="transaction in mbrSettle()">
-                          <li>
-                            <span class="fw-bold" x-text="transaction.from"></span>
-                            &rarr;
-                            <span class="fw-bold" x-text="transaction.to"></span>:
-                            <span x-text="formatNumber(transaction.amount)"></span>
-                          </li>
-                        </template>
-                      </ul>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                      <label class="form-label fs-5 mb-0">Settlement</label>
+                      <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">&#128203;&nbsp;Summary</button>
                     </div>
-                    <div class="mt-3">
-                      <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">
-                        &#128203;&nbsp;Summary
-                      </button>
+                    <div class="table-responsive mt-2">
+                      <table class="table table-sm table-bordered mb-0 fs-7 text-nowrap bg-white">
+                        <tr class="table-dark">
+                          <th class="text-start">FROM</th>
+                          <th class="text-start">TO</th>
+                          <th class="text-end">AMOUNT</th>
+                        </tr>
+                        <template x-for="transaction in mbrComputed.settle">
+                          <tr>
+                            <td x-text="transaction.from"></td>
+                            <td x-text="transaction.to"></td>
+                            <td class="text-end" x-text="formatNumber(transaction.amount)"></td>
+                          </tr>
+                        </template>
+                      </table>
                     </div>
                   </div>
                 </template>

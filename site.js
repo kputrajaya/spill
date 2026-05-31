@@ -1,5 +1,7 @@
 (() => {
-  // Alpine data
+  const MAX_PX = 1200;
+  const JPEG_QUALITY = 0.7;
+
   document.addEventListener('alpine:init', () => {
     const notyf = new Notyf({
       ripple: false,
@@ -10,20 +12,16 @@
       const params = {};
       const search = window.location.search;
       if (search) {
-        search
-          .substring(1)
-          .split('&')
-          .forEach((param) => {
-            const [key, value] = param.split('=');
-            params[key] = decodeURIComponent(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-          });
+        search.substring(1).split('&').forEach((param) => {
+          const idx = param.indexOf('=');
+          if (idx === -1) return;
+          params[param.slice(0, idx)] = decodeURIComponent(param.slice(idx + 1));
+        });
       }
       return params;
     };
     const setParams = (params) => {
-      const search = Object.keys(params)
-        .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
-        .join('&');
+      const search = Object.keys(params).map((key) => `${key}=${encodeURIComponent(params[key])}`).join('&');
       window.history.replaceState(null, null, `?${search}`);
     };
     const formatDate = (date) => {
@@ -39,11 +37,11 @@
       const creditors = [];
       const debtors = [];
       balances.forEach((balance, index) => {
-        if (balance > 0) {
-          creditors.push({ index, amount: balance });
-        } else if (balance < 0) {
-          debtors.push({ index, amount: -balance });
-        }
+    if (balance > 0) {
+      debtors.push({ index, amount: balance });
+    } else if (balance < 0) {
+      creditors.push({ index, amount: -balance });
+    }
       });
       creditors.sort((a, b) => b.amount - a.amount);
       debtors.sort((a, b) => b.amount - a.amount);
@@ -109,6 +107,7 @@
         error: null,
         billData: null,
         mbrData: this.$persist({ people: [], bills: [] }),
+        mbrComputed: null,
         roundDecimals: this.$persist(true),
 
         // Actions
@@ -120,10 +119,6 @@
           });
 
           try {
-            if (this.items !== this.items.replace(/\+|\|/g, '')) {
-              throw Error('Do not use restricted characters: +|');
-            }
-
             // Parse total
             const total = this.parseAmount(this.total.trim());
             if (!(total > 0)) {
@@ -147,12 +142,12 @@
             }
             const people = this.people
               .split('\n')
-              .map((people) => people.trim().toUpperCase())
-              .filter((people) => people)
-              .map((people, peopleIndex) => {
-                const names = people.split(' ').filter((arg) => arg);
+              .map((line) => line.trim().toUpperCase())
+              .filter((line) => line)
+              .map((line, i) => {
+                const names = line.split(' ').filter((arg) => arg);
                 if (!names.length) {
-                  throw Error(`Enter a valid name for item ${peopleIndex + 1}`);
+                  throw Error(`Enter a valid name for item ${i + 1}`);
                 }
                 return names;
               });
@@ -209,58 +204,53 @@
           fileInput.style.display = 'none';
           document.body.appendChild(fileInput);
 
-          fileInput.click();
           fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
+            document.body.removeChild(fileInput);
             if (!file) return;
 
-            notyf.success('Processing, this might take a while');
+            notyf.success('Processing, this might take a while...');
 
             const img = new Image();
-            img.src = URL.createObjectURL(file);
             img.onload = async () => {
-              // Calculate new width and height
-              const maxPx = 1200;
-              const newWidth = img.width > img.height ? maxPx : Math.round((img.width / img.height) * maxPx);
-              const newHeight = img.width > img.height ? Math.round((img.height / img.width) * maxPx) : maxPx;
+              URL.revokeObjectURL(img.src);
+              const newWidth = img.width > img.height ? MAX_PX : Math.round((img.width / img.height) * MAX_PX);
+              const newHeight = img.width > img.height ? Math.round((img.height / img.width) * MAX_PX) : MAX_PX;
 
-              // Set canvas dimensions
               const canvas = document.createElement('canvas');
               canvas.width = Math.min(img.width, newWidth);
               canvas.height = Math.min(img.height, newHeight);
 
-              // Use Pica to resize the image
-              await pica().resize(img, canvas);
-              const blob = await pica().toBlob(canvas, 'image/jpeg', 0.7);
-
-              // Upload to API
+              const blob = await pica().resize(img, canvas).toBlob(canvas, 'image/jpeg', JPEG_QUALITY);
               const formData = new FormData();
               formData.append('file', blob, file.name + '.res.jpg');
-              fetch('/api/upload', { method: 'POST', body: formData })
-                .then((res) => res.json())
-                .then((data) => {
-                  if (!data || !data.total || !data.items) throw new Error();
-                  this.total = `${this.parseAmount(data.total)}`;
-                  this.items = data.items
-                    .map((item) => {
-                      const amount = this.parseAmount(item.amount);
-                      const name = (item.name || '').replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
-                      return `${amount} - ${name}`;
-                    })
-                    .join('\n');
-                  this.people = '';
-                  this.resizeTextArea();
-                  notyf.success('Data extracted, please verify');
-                })
-                .catch((err) => {
-                  console.log('Image uploaded error:', err);
-                  notyf.error('Failed to extract data');
-                })
-                .finally(() => {
-                  document.body.removeChild(fileInput);
-                });
+              try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!data || !data.total || !data.items) throw new Error();
+                this.total = `${this.parseAmount(data.total)}`;
+                this.items = data.items
+                  .map((item) => {
+                    const amount = this.parseAmount(item.amount);
+                    const name = (item.name || '').replace(/[^\w]/g, ' ').replace(/\s+/g, ' ').trim();
+                    return `${amount} - ${name}`;
+                  })
+                  .join('\n');
+                this.people = '';
+                this.resizeTextArea();
+                notyf.success('Data extracted, please verify!');
+              } catch {
+                notyf.error('Failed to extract data!');
+              }
             };
+            img.onerror = () => {
+              URL.revokeObjectURL(img.src);
+              notyf.error('Failed to load image!');
+            };
+            img.src = URL.createObjectURL(file);
           });
+
+          fileInput.click();
         },
         async copySummary() {
           if (!this.billData?.people?.length) return;
@@ -276,14 +266,14 @@
 
           // Copy to clipboard
           const result = await copyText(summary);
-          result ? notyf.success('Summary copied') : notyf.error('Cannot access clipboard');
+          result ? notyf.success('Split summary copied!') : notyf.error('Cannot access clipboard!');
         },
         async copyLink() {
           if (!this.billData?.people?.length) return;
 
           // Copy to clipboard
           const result = await copyText(location.href);
-          result ? notyf.success('Link copied') : notyf.error('Cannot access clipboard');
+          result ? notyf.success('Shareable link copied!') : notyf.error('Cannot access clipboard!');
         },
         mbrSave() {
           const peopleCount = this.billData?.people?.length;
@@ -292,18 +282,18 @@
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
           const payerInfo = (
-            prompt(`Stacking the bill above to be settled later. Who paid? (1 - ${peopleCount})?\n${nameList}`) || ''
+            prompt(`Saving the bill above to settle later. Who paid? (1–${peopleCount})\n${nameList}`) || ''
           ).toUpperCase();
           const payer =
             this.billData.people[Math.floor(payerInfo) - 1] ||
             this.billData.people.find((person) => person === payerInfo);
           if (!payer) {
-            notyf.error(`Please input number 1 - ${peopleCount}`);
+            notyf.error(`Please input number 1–${peopleCount}!`);
             return;
           }
 
           // Ask for bill note
-          const note = (prompt('Put an optional description for this bill:') || formatDate(new Date())).trim();
+          const note = (prompt('Put optional description for this bill:') || formatDate(new Date())).trim();
 
           // Record bill into MBR data
           this.mbrData.people = [...new Set([...this.mbrData.people, ...this.billData.people])].sort();
@@ -313,52 +303,80 @@
             totalPriceWithFee: this.billData.totalPriceWithFee,
             peopleTotal: this.billData.peopleTotal,
           });
-          notyf.success('Bill saved to stack');
+          this.mbrCompute();
+          notyf.success('Current bill saved!');
         },
         mbrDelete(index) {
           if (!confirm('Delete this bill?')) return;
           this.mbrData.bills.splice(index, 1);
+          this.mbrCompute();
         },
         mbrClear() {
-          if (!confirm('Delete all stacked bills?')) return;
+          if (!this.mbrData?.bills?.length) {
+            notyf.error('No bills to clear!');
+            return;
+          }
+
+          if (!confirm('Delete all saved bills?')) return;
           this.mbrData = { people: [], bills: [] };
-          notyf.success('Bills cleared');
+          this.mbrComputed = null;
+          notyf.success('All bills deleted!');
         },
-        mbrListBalances() {
-          const balanceMap = Object.fromEntries(this.mbrData.people.map((person) => [person, { credit: 0, debt: 0 }]));
-          this.mbrData.bills.forEach((bill) => {
+        mbrCompute() {
+          if (!this.mbrData?.bills?.length) {
+            this.mbrComputed = null;
+            return;
+          }
+
+          const people = this.mbrData.people;
+          const bills = this.mbrData.bills;
+          const spent = people.map(() => 0);
+          const paid = people.map(() => 0);
+          const balanceMap = Object.fromEntries(people.map((p) => [p, { credit: 0, debt: 0 }]));
+          let totalSpentAll = 0;
+
+          bills.forEach((bill) => {
+            totalSpentAll += bill.totalPriceWithFee;
+            people.forEach((person, i) => {
+              spent[i] += bill.peopleTotal[person] || 0;
+              if (bill.payer === person) paid[i] += bill.totalPriceWithFee;
+            });
             Object.keys(bill.peopleTotal).forEach((payee) => {
               if (bill.payer === payee) return;
               balanceMap[bill.payer].credit += bill.peopleTotal[payee];
               balanceMap[payee].debt += bill.peopleTotal[payee];
             });
           });
-          return this.mbrData.people.map((person) =>
-            this.parseAmount(balanceMap[person].credit - balanceMap[person].debt)
+
+          const listBalances = people.map((person) =>
+            this.parseAmount(balanceMap[person].debt - balanceMap[person].credit)
           );
-        },
-        mbrSettle() {
-          const balances = this.mbrListBalances();
-          const transactions = settleBalances(balances).map((transaction) => ({
-            from: this.mbrData.people[transaction.from],
-            to: this.mbrData.people[transaction.to],
-            amount: this.parseAmount(transaction.amount),
-          }));
-          return transactions;
+
+          this.mbrComputed = {
+            totalSpentAll: this.parseAmount(totalSpentAll),
+            listTotalSpent: spent.map((v) => this.parseAmount(v)),
+            listTotalPaid: paid.map((v) => this.parseAmount(v)),
+            listBalances,
+            settle: settleBalances(listBalances).map((t) => ({
+              from: people[t.from],
+              to: people[t.to],
+              amount: this.parseAmount(t.amount),
+            })),
+          };
         },
         async mbrCopy() {
-          if (!this.mbrData?.people?.length) return;
+          if (!this.mbrComputed) return;
 
           // Prepare summary
-          const total = this.mbrData.bills.reduce((acc, cur) => acc + cur.totalPriceWithFee, 0);
+          const total = this.mbrComputed.totalSpentAll;
           let summary = `TOTAL (${this.mbrData.bills.length}): ${this.formatNumber(total)}\r\n===`;
-          this.mbrSettle().forEach((transaction) => {
+          this.mbrComputed.settle.forEach((transaction) => {
             summary += `\r\n${transaction.from} -> ${transaction.to}: ${this.formatNumber(transaction.amount)}`;
           });
 
           // Copy to clipboard
           const result = await copyText(summary);
-          result ? notyf.success('Summary copied') : notyf.error('Cannot access clipboard');
+          result ? notyf.success('Settlement summary copied!') : notyf.error('Cannot access clipboard!');
         },
 
         // Helpers
@@ -370,8 +388,10 @@
           const factor = this.roundDecimals ? 1 : 100;
           return Math.round(parsed * factor) / factor;
         },
-        formatNumber(num) {
-          const decimals = this.roundDecimals ? 0 : 2;
+        formatNumber(num, decimals = null) {
+          if (decimals === null) {
+            decimals = this.roundDecimals ? 0 : 2;
+          }
           return num != null ? num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
         },
         resizeTextArea() {
@@ -396,11 +416,15 @@
           if (params.people != null) this.people = params.people;
 
           // Compute and watch
+          this.mbrCompute();
           this.compute();
           this.$watch('total', () => this.compute());
           this.$watch('items', () => this.compute());
           this.$watch('people', () => this.compute());
-          this.$watch('roundDecimals', () => this.compute());
+          this.$watch('roundDecimals', () => {
+            this.compute();
+            this.mbrCompute();
+          });
 
           // Resize textarea and watch
           this.resizeTextArea();
