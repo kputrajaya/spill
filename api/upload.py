@@ -48,16 +48,8 @@ class handler(BaseHTTPRequestHandler):
                 This is an image of a purchase receipt.
                 Extract the line item data and the grand total.
 
-                Respond in the following JSON format, which must be valid, clean, and parseable:
-                ```
-                {
-                  "total": "60500.00",
-                  "items": [
-                    {"name": "Noodle", "amount": "30000.00"},
-                    {"name": "Coffee", "amount": "25000.00"}
-                  ]
-                }
-                ```
+                Return raw JSON only, no markdown formatting or code blocks:
+                {"total": "60500.00", "items": [{"name": "Noodle", "amount": "30000.00"}, {"name": "Coffee", "amount": "25000.00"}]}
 
                 Preserve the order of items as shown in the receipt.
                 If there are 3 digits after a dot, it's a thousands separator.
@@ -79,7 +71,9 @@ class handler(BaseHTTPRequestHandler):
                 max_tokens=1024,
             )
 
-            content = response.choices[0].message.content
+            content = response.choices[0].message.content.strip()
+            if content.startswith('```'):
+                content = content.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
             try:
                 items = json.loads(content)
             except json.JSONDecodeError:
