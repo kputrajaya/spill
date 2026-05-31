@@ -1,19 +1,19 @@
 import cgi
+from http.server import BaseHTTPRequestHandler
 import json
 import os
-from http.server import BaseHTTPRequestHandler
 
-from google.cloud import documentai
-from google.oauth2 import service_account
+import openai
+import requests
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        project_id = os.environ['GOOGLE_PROJECT_ID']
-        location = os.environ['GOOGLE_LOCATION']
-        processor_id = os.environ['GOOGLE_PROCESSOR_ID']
-        sa_json = json.loads(os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'])
+        uplass_app_key = os.environ['UPLASS_APP_KEY']
+        uplass_app_secret = os.environ['UPLASS_APP_SECRET']
+        openai_api_key = os.environ['OPENAI_API_KEY']
 
+        # Parse multipart form data
         form_data = cgi.FieldStorage(
             fp=self.rfile,
             environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers['Content-Type']})
@@ -21,47 +21,75 @@ class handler(BaseHTTPRequestHandler):
             self.send_error(400, 'Missing file')
             return
         file_item = form_data['file']
-        image_bytes = file_item.file.read()
-        mime_type = file_item.type or 'image/jpeg'
 
+        # Get token from Uplass
+        url = 'https://uplass.kvn.ovh/token'
+        data = {'AppKey': uplass_app_key, 'AppSecret': uplass_app_secret}
+        response = requests.post(url, json=data)
+        if response.status_code != 200:
+            self.send_error(500, 'Failed to get upload token')
+            return
+        token = response.text
+
+        # Upload image to Uplass
+        url = 'https://uplass.kvn.ovh/upload'
+        data = {'token': token}
+        files = {'file': (file_item.filename, file_item.file.read(), file_item.type)}
+        response = requests.post(url, data=data, files=files)
+        if response.status_code != 200:
+            self.send_error(500, 'Failed to upload image')
+            return
+        image_url = response.text
+        print(f'Image uploaded to: {image_url}')
+
+        # Extract data using ChatGPT
         try:
-            credentials = service_account.Credentials.from_service_account_info(sa_json)
-            client = documentai.DocumentProcessorServiceClient(credentials=credentials)
-            resource_name = client.processor_path(project_id, location, processor_id)
+            prompt = '''
+                This is an image of a purchase receipt.
+                Extract the line item data and the grand total.
 
-            raw_document = documentai.RawDocument(content=image_bytes, mime_type=mime_type)
-            request = documentai.ProcessRequest(name=resource_name, raw_document=raw_document)
-            result = client.process_document(request=request)
-            document = result.document
+                Respond in the following JSON format, which must be valid, clean, and parseable:
+                ```
+                {
+                  "total": "60500.00",
+                  "items": [
+                    {"name": "Noodle", "amount": "30000.00"},
+                    {"name": "Coffee", "amount": "25000.00"}
+                  ]
+                }
+                ```
 
-            total = None
-            items = []
+                Preserve the order of items as shown in the receipt.
+                If there are 3 digits after a dot, it's a thousands separator.
+                If any info is not clearly present, use null.
+                Do not guess or hallucinate.
+            '''
+            client = openai.OpenAI(api_key=openai_api_key)
+            response = client.chat.completions.create(
+                model='gpt-4.1-mini',
+                messages=[
+                    {
+                        'role': 'user',
+                        'content': [
+                            {'type': 'text', 'text': prompt},
+                            {'type': 'image_url', 'image_url': {'url': image_url}},
+                        ],
+                    }
+                ],
+                max_tokens=1024,
+            )
 
-            for entity in document.entities:
-                if entity.type_ == 'total_amount' and entity.normalized_value:
-                    money = entity.normalized_value.money_value
-                    total = money.units + money.nanos / 1e9
-                elif entity.type_ == 'line_item':
-                    name = ''
-                    amount = None
-                    for prop in entity.properties:
-                        if prop.type_ == 'line_item/description':
-                            name = prop.mention_text.strip()
-                        elif prop.type_ == 'line_item/amount':
-                            if prop.normalized_value:
-                                money = prop.normalized_value.money_value
-                                amount = money.units + money.nanos / 1e9
-                    if name and amount is not None:
-                        items.append({'name': name, 'amount': f'{amount:.2f}'})
-
-            response = {
-                'total': f'{total:.2f}' if total is not None else None,
-                'items': items,
-            }
+            content = response.choices[0].message.content
+            try:
+                items = json.loads(content)
+            except json.JSONDecodeError:
+                error_message = f'Invalid JSON. Raw: {content}'
+                self.send_error(500, error_message)
+                return
 
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(items).encode())
         except Exception as e:
             self.send_error(500, f'Failed to process image: {str(e)}')
