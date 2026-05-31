@@ -211,7 +211,7 @@
             document.body.removeChild(fileInput);
             if (!file) return;
 
-            notyf.success('Processing, this might take a while...');
+            notyf.success('Processing, please wait...');
 
             const img = new Image();
             img.onload = async () => {
@@ -223,7 +223,9 @@
               canvas.width = Math.min(img.width, newWidth);
               canvas.height = Math.min(img.height, newHeight);
 
-              const blob = await pica().resize(img, canvas).toBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+              const picaInstance = pica();
+              await picaInstance.resize(img, canvas);
+              const blob = await picaInstance.toBlob(canvas, 'image/jpeg', JPEG_QUALITY);
               const formData = new FormData();
               formData.append('file', blob, file.name + '.res.jpg');
               try {
