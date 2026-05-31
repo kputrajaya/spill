@@ -26,8 +26,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             credentials = service_account.Credentials.from_service_account_info(sa_json)
-            client_options = {'api_endpoint': f'{location}-documentai.googleapis.com'}
-            client = documentai.DocumentProcessorServiceClient(credentials=credentials, client_options=client_options)
+            client = documentai.DocumentProcessorServiceClient(credentials=credentials)
             resource_name = client.processor_path(project_id, location, processor_id)
 
             raw_document = documentai.RawDocument(content=image_bytes, mime_type=mime_type)
