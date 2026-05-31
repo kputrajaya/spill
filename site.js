@@ -124,7 +124,7 @@
             // Parse total
             const total = this.parseAmount(this.total.trim());
             if (!(total > 0)) {
-              throw Error('Enter a valid total');
+              throw Error('Enter a valid total!');
             }
 
             // Parse items (price) and people (array of names)
@@ -135,12 +135,12 @@
               .map((item, itemIndex) => {
                 const price = this.parseAmount(item);
                 if (!(price > 0)) {
-                  throw Error(`Enter a valid price for item ${itemIndex + 1}`);
+                  throw Error(`Enter a valid price for item ${itemIndex + 1}!`);
                 }
                 return price;
               });
             if (!items.length) {
-              throw Error('Fill in items information');
+              throw Error('Fill in items information!');
             }
             const people = this.people
               .split('\n')
@@ -149,15 +149,15 @@
               .map((line, i) => {
                 const names = line.split(' ').filter((arg) => arg);
                 if (!names.length) {
-                  throw Error(`Enter a valid name for item ${i + 1}`);
+                  throw Error(`Enter a valid name for item ${i + 1}!`);
                 }
                 return names;
               });
             if (!people.length) {
-              throw Error('Fill in people information');
+              throw Error('Fill in people information!');
             }
             if (items.length !== people.length) {
-              throw Error('Ensure the number of items and people match');
+              throw Error('Ensure item and people counts match!');
             }
 
             // Calculate fee
@@ -286,7 +286,7 @@
           // Ask for payer info
           const nameList = this.billData.people.map((person, index) => `${index + 1}. ${person}`).join('\n');
           const payerInfo = (
-            prompt(`Saving the bill above to settle later. Who paid? (1–${peopleCount})\n${nameList}`) || ''
+            prompt(`Saving the current bill to settle later. Who paid? (1–${peopleCount})\n${nameList}`) || ''
           ).toUpperCase();
           const payer =
             this.billData.people[Math.floor(payerInfo) - 1] ||
