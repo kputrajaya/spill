@@ -21,7 +21,9 @@
       return params;
     };
     const setParams = (params) => {
-      const search = Object.keys(params).map((key) => `${key}=${encodeURIComponent(params[key])}`).join('&');
+      const search = Object.keys(params)
+        .map((key) => `${key}=${encodeURIComponent(params[key]).replace(/%20/g, '+').replace(/%0A/g, '|')}`)
+        .join('&');
       window.history.replaceState(null, null, `?${search}`);
     };
     const formatDate = (date) => {
