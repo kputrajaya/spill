@@ -177,15 +177,18 @@
               people[itemIndex].forEach((person) => {
                 const proratedPriceWithFee = proratedPrice * (1 + feePercentage);
                 datum.people[person] = this.parseAmount((datum.people[person] || 0) + proratedPriceWithFee);
-                peopleTotal[person] = this.parseAmount((peopleTotal[person] || 0) + proratedPriceWithFee);
+                peopleTotal[person] = (peopleTotal[person] || 0) + proratedPriceWithFee;
               });
-              totalPrice += datum.price;
-              totalPriceWithFee += datum.priceWithFee;
+              totalPrice += item;
+              totalPriceWithFee += item * (1 + feePercentage);
               return datum;
             });
 
             // Save to bill data
             this.error = null;
+            Object.keys(peopleTotal).forEach((person) => {
+              peopleTotal[person] = this.parseAmount(peopleTotal[person]);
+            });
             this.billData = {
               people: Object.keys(peopleTotal).sort(),
               feePercentage: Math.round(feePercentage * 1000) / 10,
