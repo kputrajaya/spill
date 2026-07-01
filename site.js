@@ -383,11 +383,33 @@
         async mbrCopy() {
           if (!this.mbrComputed) return;
 
+          const people = this.mbrData.people;
+          const bills = this.mbrData.bills;
+
+          // Count spent and paid per person
+          const spentCount = people.map(() => 0);
+          const paidCount = people.map(() => 0);
+          bills.forEach((bill) => {
+            people.forEach((person, i) => {
+              if ((bill.peopleTotal[person] || 0) > 0) spentCount[i]++;
+              if (bill.payer === person) paidCount[i]++;
+            });
+          });
+
           // Prepare summary
-          const total = this.mbrComputed.totalSpentAll;
-          let summary = `TOTAL (${this.mbrData.bills.length}): ${this.formatNumber(total)}\r\n===`;
+          let summary = 'SETTLEMENT\r\n===';
           this.mbrComputed.settle.forEach((transaction) => {
             summary += `\r\n${transaction.from} -> ${transaction.to}: ${this.formatNumber(transaction.amount)}`;
+          });
+          summary += '\r\n\r\nDETAILS\r\n===';
+          people.forEach((person, i) => {
+            summary += `\r\n${person}`;
+            if (spentCount[i] > 0) {
+              summary += `\r\n- Spent (${spentCount[i]}): ${this.formatNumber(this.mbrComputed.listTotalSpent[i])}`;
+            }
+            if (paidCount[i] > 0) {
+              summary += `\r\n- Paid (${paidCount[i]}): ${this.formatNumber(this.mbrComputed.listTotalPaid[i])}`;
+            }
           });
 
           // Copy to clipboard
