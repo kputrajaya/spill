@@ -52,19 +52,20 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             prompt = '''
-                This is an image of a purchase receipt.
-                Extract the line item data and the grand total.
-
-                Return raw JSON only, no markdown formatting or code blocks, numbers without thousand separators:
+                Extract each line item and the grand total from this purchase receipt.
+                Return ONLY raw JSON (no markdown, no code blocks):
                 {
                     "total": "60500.00",
                     "items": [{"name": "Noodle", "amount": "30000.00"}, {"name": "Coffee", "amount": "25000.00"}]
                 }
 
-                Preserve the order of items as shown in the receipt.
-                Ignore quantities and unit prices, only extract the total amount for each item.
-                If there are 3 digits after a dot or comma, it's a thousands separator — do not treat as decimals.
-                If any info is ambiguous or not clear, use null — do not guess or hallucinate.
+                Rules:
+                - "total" = grand total at the bottom of the receipt
+                - "amount" = line total for that item (ignore unit prices and quantities)
+                - Preserve item order as printed on receipt
+                - 3 digits after a dot or comma means thousand separator, not decimal
+                - Output numbers as strings without thousand separators (e.g., "60000.00" not "60.000,00")
+                - If ambiguous or unclear, use null — never guess or hallucinate
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
