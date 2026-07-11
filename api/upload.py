@@ -52,9 +52,10 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             prompt = '''
-                This is an image of a purchase receipt.
-                Extract the line item data and the grand total.
+                This is an image of a purchase receipt, focus on it.
+                If you don't think it is, respond with null.
 
+                Extract the line item data and the grand total.
                 Return raw JSON only, no markdown formatting or code blocks:
                 {
                     "total": "60500.00",
@@ -62,9 +63,10 @@ class handler(BaseHTTPRequestHandler):
                 }
 
                 Preserve the order of items as shown in the receipt.
-                If there are 3 digits after a dot, it's a thousands separator.
-                If any info is ambiguous or not clear, use null.
-                Do not guess or hallucinate.
+                Ignore quantities and unit prices, only extract the total amount for each item.
+
+                If there are 3 digits after a dot or comma, it's a thousands separator — do not treat as decimals.
+                If any info is ambiguous or not clear, use null — do not guess or hallucinate.
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
