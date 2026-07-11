@@ -54,7 +54,8 @@ class handler(BaseHTTPRequestHandler):
             prompt = '''
                 This is an image of a purchase receipt.
                 Extract the line item data and the grand total.
-                Return raw JSON only, no markdown formatting or code blocks:
+
+                Return raw JSON only, no markdown formatting or code blocks, numbers without thousand separators:
                 {
                     "total": "60500.00",
                     "items": [{"name": "Noodle", "amount": "30000.00"}, {"name": "Coffee", "amount": "25000.00"}]
@@ -62,7 +63,6 @@ class handler(BaseHTTPRequestHandler):
 
                 Preserve the order of items as shown in the receipt.
                 Ignore quantities and unit prices, only extract the total amount for each item.
-
                 If there are 3 digits after a dot or comma, it's a thousands separator — do not treat as decimals.
                 If any info is ambiguous or not clear, use null — do not guess or hallucinate.
             '''
