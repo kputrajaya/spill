@@ -1,18 +1,18 @@
+import base64
+import io
 import json
 import os
 from http.server import BaseHTTPRequestHandler
 
 import openai
-import requests
+from PIL import Image
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        uplass_app_key = os.environ.get('UPLASS_APP_KEY')
-        uplass_app_secret = os.environ.get('UPLASS_APP_SECRET')
         openai_api_key = os.environ.get('OPENAI_API_KEY')
-        if not uplass_app_key or not uplass_app_secret or not openai_api_key:
-            self.send_error(500, 'Server configuration error')
+        if not openai_api_key:
+            self.send_error(500, 'Configuration error')
             return
 
         content_type = self.headers.get('Content-Type', '')
@@ -23,10 +23,7 @@ class handler(BaseHTTPRequestHandler):
         boundary = content_type.split('boundary=')[1].strip()
         raw = self.rfile.read(int(self.headers.get('Content-Length', 0)))
         parts = raw.split(f'--{boundary}'.encode())
-
         image_bytes = None
-        mime_type = 'image/jpeg'
-
         for part in parts:
             if b'Content-Disposition' in part and b'name="file"' in part:
                 idx = part.find(b'\r\n\r\n')
@@ -36,31 +33,22 @@ class handler(BaseHTTPRequestHandler):
                 data = data.split(b'\r\n--')[0]
                 data = data.split(b'\r\n--')[0]
                 image_bytes = data.strip(b'\r\n')
-                if b'Content-Type:' in part:
-                    ct = part[part.find(b'Content-Type:'):]
-                    ct = ct.split(b'\r\n')[0]
-                    mime_type = ct.split(b':', 1)[1].strip().decode()
-
         if not image_bytes:
             self.send_error(400, 'Missing file')
             return
 
-        url = 'https://uplass.kvn.ovh/token'
-        data = {'AppKey': uplass_app_key, 'AppSecret': uplass_app_secret}
-        response = requests.post(url, json=data)
-        if response.status_code != 200:
-            self.send_error(500, 'Failed to authorize upload')
-            return
-        token = response.text
-
-        url = 'https://uplass.kvn.ovh/upload'
-        data = {'token': token}
-        files = {'file': ('upload.jpg', image_bytes, mime_type)}
-        response = requests.post(url, data=data, files=files)
-        if response.status_code != 200:
-            self.send_error(500, 'Failed to upload image')
-            return
-        image_url = response.text
+        img = Image.open(io.BytesIO(image_bytes))
+        max_dim = 1024
+        w, h = img.size
+        if w > max_dim or h > max_dim:
+            ratio = min(max_dim / w, max_dim / h)
+            img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=80)
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        data_url = f'data:image/jpeg;base64,{b64}'
 
         try:
             prompt = '''
@@ -86,7 +74,7 @@ class handler(BaseHTTPRequestHandler):
                         'role': 'user',
                         'content': [
                             {'type': 'text', 'text': prompt},
-                            {'type': 'image_url', 'image_url': {'url': image_url}},
+                            {'type': 'image_url', 'image_url': {'url': data_url}},
                         ],
                     }
                 ],
