@@ -52,9 +52,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             prompt = '''
-                This is an image of a purchase receipt, focus on it.
-                If you don't think it is, respond with null.
-
+                This is an image of a purchase receipt.
                 Extract the line item data and the grand total.
                 Return raw JSON only, no markdown formatting or code blocks:
                 {
