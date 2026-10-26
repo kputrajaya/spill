@@ -8,6 +8,9 @@ import openai
 from PIL import Image
 
 
+MAX_REQUEST_BYTES = 10 * 1024 * 1024
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         openai_api_key = os.environ.get('OPENAI_API_KEY')
@@ -20,8 +23,23 @@ class handler(BaseHTTPRequestHandler):
             self.send_error(400, 'Missing header')
             return
 
+        try:
+            content_length = int(self.headers.get('Content-Length', ''))
+        except (TypeError, ValueError):
+            self.send_error(400, 'Invalid content length')
+            return
+        if content_length <= 0:
+            self.send_error(400, 'Missing request body')
+            return
+        if content_length > MAX_REQUEST_BYTES:
+            self.send_error(413, 'Upload too large')
+            return
+
         boundary = content_type.split('boundary=')[1].strip()
-        raw = self.rfile.read(int(self.headers.get('Content-Length', 0)))
+        raw = self.rfile.read(content_length)
+        if len(raw) != content_length:
+            self.send_error(400, 'Incomplete request body')
+            return
         parts = raw.split(f'--{boundary}'.encode())
         image_bytes = None
         for part in parts:
