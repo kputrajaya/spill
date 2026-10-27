@@ -98,11 +98,36 @@ class handler(BaseHTTPRequestHandler):
                     }
                 ],
                 max_completion_tokens=1024,
+                response_format={
+                    'type': 'json_schema',
+                    'json_schema': {
+                        'name': 'receipt',
+                        'strict': True,
+                        'schema': {
+                            'type': 'object',
+                            'properties': {
+                                'total': {'type': ['string', 'null']},
+                                'items': {
+                                    'type': 'array',
+                                    'items': {
+                                        'type': 'object',
+                                        'properties': {
+                                            'name': {'type': ['string', 'null']},
+                                            'amount': {'type': ['string', 'null']},
+                                        },
+                                        'required': ['name', 'amount'],
+                                        'additionalProperties': False,
+                                    },
+                                },
+                            },
+                            'required': ['total', 'items'],
+                            'additionalProperties': False,
+                        },
+                    },
+                },
             )
 
-            content = response.choices[0].message.content.strip()
-            if content.startswith('```'):
-                content = content.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+            content = (response.choices[0].message.content or '').strip()
             try:
                 items = json.loads(content)
             except json.JSONDecodeError:
