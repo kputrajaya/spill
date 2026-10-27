@@ -97,7 +97,7 @@ class handler(BaseHTTPRequestHandler):
                         ],
                     }
                 ],
-                max_tokens=1024,
+                max_completion_tokens=1024,
             )
 
             content = response.choices[0].message.content.strip()
