@@ -1,5 +1,5 @@
 (() => {
-  const MAX_PX = 1200;
+  const MAX_PX = 2000;
   const JPEG_QUALITY = 0.7;
 
   document.addEventListener('alpine:init', () => {

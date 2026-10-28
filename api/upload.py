@@ -57,7 +57,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         img = Image.open(io.BytesIO(image_bytes))
-        max_dim = 1024
+        max_dim = 2000
         w, h = img.size
         if w > max_dim or h > max_dim:
             ratio = min(max_dim / w, max_dim / h)
@@ -71,15 +71,25 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             prompt = '''
-                Extract each line item and the grand total from this purchase receipt.
+                Read the receipt in the photo. Focus on the paper receipt; ignore the table, hands,
+                shadows, logos, and unrelated background text. The receipt may be rotated, tilted,
+                or perspective-distorted; correct for this visually before reading.
 
-                Rules:
-                - "total" = grand total at the bottom of the receipt
-                - "amount" = line total for that item (ignore unit prices and quantities)
-                - Preserve item order as printed on receipt
-                - 3 digits after a dot or comma means thousand separator, not decimal
-                - Output numbers as strings without thousand separators (e.g., "60000.00" not "60.000,00")
-                - If ambiguous or unclear, use null — never guess or hallucinate
+                Extract each purchased item in printed order. Join wrapped description lines that
+                clearly belong to the same item. For each item, use its final line total, including
+                quantity—not its unit price or quantity.
+
+                Do not include subtotal, tax, service charge, discounts, payment, amount tendered,
+                or change as purchased items. Use the final amount due as the grand total, not the
+                subtotal, tax, or amount tendered.
+
+                Normalize monetary values: omit currency symbols and thousands separators, use a
+                period as the decimal separator, and include two decimal places. If both comma and
+                period appear, the rightmost is the decimal separator. If only one separator kind
+                appears and exactly three digits follow it, treat it as a thousands separator.
+
+                If text or an amount is unreadable or ambiguous, use null for that value. Never
+                infer or guess from context.
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
