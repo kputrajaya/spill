@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 import os
 from http.server import BaseHTTPRequestHandler
 
@@ -9,6 +10,9 @@ from PIL import Image
 
 
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
+# Temporary production diagnostics; remove after model compatibility is confirmed.
+RECEIPT_MODEL = 'gpt-6-luna'
+logger = logging.getLogger(__name__)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -69,6 +73,7 @@ class handler(BaseHTTPRequestHandler):
         data_url = f'data:image/jpeg;base64,{b64}'
 
         try:
+            stage = 'api_request'
             prompt = '''
                 Extract each line item and the grand total from this purchase receipt.
                 Return ONLY raw JSON (no markdown, no code blocks):
@@ -87,7 +92,7 @@ class handler(BaseHTTPRequestHandler):
             '''
             client = openai.OpenAI(api_key=openai_api_key)
             response = client.chat.completions.create(
-                model='gpt-4o',
+                model=RECEIPT_MODEL,
                 messages=[
                     {
                         'role': 'user',
@@ -97,15 +102,44 @@ class handler(BaseHTTPRequestHandler):
                         ],
                     }
                 ],
-                max_tokens=1024,
+                max_completion_tokens=1024,
             )
 
-            content = response.choices[0].message.content.strip()
+            stage = 'response_validation'
+            if not response.choices:
+                logger.error('Receipt model returned no choices (model=%s)', RECEIPT_MODEL)
+                self.send_error(500, 'Failed to process image')
+                return
+
+            choice = response.choices[0]
+            content = choice.message.content
+            if not isinstance(content, str) or not content.strip():
+                logger.error(
+                    'Receipt model returned empty content (model=%s, response_id=%r, '
+                    'finish_reason=%r, refusal=%s)',
+                    RECEIPT_MODEL,
+                    getattr(response, 'id', None),
+                    choice.finish_reason,
+                    bool(getattr(choice.message, 'refusal', None)),
+                )
+                self.send_error(500, 'Failed to process image')
+                return
+            content = content.strip()
             if content.startswith('```'):
                 content = content.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
+            stage = 'response_parse'
             try:
                 items = json.loads(content)
             except json.JSONDecodeError:
+                logger.error(
+                    'Receipt model returned invalid JSON (model=%s, response_id=%r, '
+                    'finish_reason=%r, refusal=%s, response_chars=%d)',
+                    RECEIPT_MODEL,
+                    getattr(response, 'id', None),
+                    choice.finish_reason,
+                    bool(getattr(choice.message, 'refusal', None)),
+                    len(content),
+                )
                 self.send_error(500, 'Failed to parse receipt')
                 return
 
@@ -113,5 +147,35 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(items).encode())
-        except Exception:
+        except openai.APIStatusError as exc:
+            logger.error(
+                'Receipt API rejected request (model=%s, endpoint=chat.completions, status=%s, '
+                'code=%r, param=%r, request_id=%r)',
+                RECEIPT_MODEL,
+                exc.status_code,
+                getattr(exc, 'code', None),
+                getattr(exc, 'param', None),
+                getattr(exc, 'request_id', None),
+            )
+            self.send_error(500, 'Failed to process image')
+        except openai.APIConnectionError as exc:
+            logger.error(
+                'Receipt API connection failed (model=%s, cause_type=%s)',
+                RECEIPT_MODEL,
+                type(exc.__cause__).__name__ if exc.__cause__ else 'unknown',
+            )
+            self.send_error(500, 'Failed to process image')
+        except openai.OpenAIError as exc:
+            logger.error(
+                'Receipt OpenAI client error (model=%s, error_type=%s)',
+                RECEIPT_MODEL,
+                type(exc).__name__,
+            )
+            self.send_error(500, 'Failed to process image')
+        except Exception as exc:
+            logger.error(
+                'Receipt processing failed (stage=%s, error_type=%s)',
+                locals().get('stage', 'unknown'),
+                type(exc).__name__,
+            )
             self.send_error(500, 'Failed to process image')
