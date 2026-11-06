@@ -9,7 +9,24 @@ from PIL import Image
 
 
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
+MAX_IMAGE_PIXELS = 20_000_000
+ALLOWED_FORMATS = {'JPEG', 'PNG', 'WEBP'}
 RECEIPT_MODEL = 'gpt-6-luna'
+
+
+def _load_image(image_bytes):
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as probe:
+            if probe.format not in ALLOWED_FORMATS:
+                raise ValueError('Unsupported image format')
+            if probe.width * probe.height > MAX_IMAGE_PIXELS:
+                raise ValueError('Image dimensions too large')
+            probe.verify()
+        image = Image.open(io.BytesIO(image_bytes))
+        image.load()
+        return image
+    except (Image.DecompressionBombError, Image.UnidentifiedImageError, OSError):
+        raise ValueError('Invalid image') from None
 
 
 class handler(BaseHTTPRequestHandler):
@@ -36,7 +53,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_error(413, 'Upload too large')
             return
 
-        boundary = content_type.split('boundary=')[1].strip()
+        boundary = content_type.split('boundary=', 1)[1].split(';', 1)[0].strip().strip('"')
         raw = self.rfile.read(content_length)
         if len(raw) != content_length:
             self.send_error(400, 'Incomplete request body')
@@ -56,7 +73,12 @@ class handler(BaseHTTPRequestHandler):
             self.send_error(400, 'Missing file')
             return
 
-        img = Image.open(io.BytesIO(image_bytes))
+        try:
+            img = _load_image(image_bytes)
+        except ValueError as exc:
+            self.send_error(400, str(exc))
+            return
+
         max_dim = 2000
         w, h = img.size
         if w > max_dim or h > max_dim:
