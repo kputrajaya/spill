@@ -418,9 +418,6 @@
         },
 
         // Helpers
-        select(e) {
-          e.target.select();
-        },
         parseAmount(amount) {
           const parsed = parseFloat(amount) || 0;
           const factor = this.roundDecimals ? 1 : 100;

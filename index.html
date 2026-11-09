@@ -33,12 +33,12 @@
       </div>
       <div>
         <label for="totalInput" class="form-label mb-1 fs-7 fw-bold">Total</label>
-        <input id="totalInput" type="number" class="form-control" x-model="total" @focus="select" />
+        <input id="totalInput" type="number" class="form-control" x-model="total" />
       </div>
       <div class="row mt-1 gx-1">
         <div class="col-6">
           <label for="itemsInput" class="form-label mb-1 fs-7 fw-bold"> Items </label>
-          <textarea id="itemsInput" class="list-input form-control" rows="3" x-model="items" @focus="select"></textarea>
+          <textarea id="itemsInput" class="list-input form-control" rows="3" x-model="items"></textarea>
         </div>
         <div class="col-6">
           <label for="peopleInput" class="form-label mb-1 fs-7 fw-bold"> People </label>
@@ -47,7 +47,6 @@
             class="list-input form-control"
             rows="3"
             x-model="people"
-            @focus="select"
           ></textarea>
         </div>
       </div>
