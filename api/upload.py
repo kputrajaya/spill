@@ -3,6 +3,7 @@ import io
 import json
 import os
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlsplit
 
 import openai
 from PIL import Image
@@ -12,6 +13,17 @@ MAX_REQUEST_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 ALLOWED_FORMATS = {'JPEG', 'PNG', 'WEBP'}
 RECEIPT_MODEL = 'gpt-6-luna'
+
+
+def _origin_allowed(headers):
+    host = (os.environ.get('HOST') or '').strip()
+    if not host:
+        return True
+    try:
+        expected = urlsplit(host if '://' in host else f'//{host}').hostname
+        return urlsplit(headers.get('Origin') or headers.get('Referer') or '').hostname == expected
+    except ValueError:
+        return False
 
 
 def _load_image(image_bytes):
@@ -34,6 +46,10 @@ class handler(BaseHTTPRequestHandler):
         openai_api_key = os.environ.get('OPENAI_API_KEY')
         if not openai_api_key:
             self.send_error(500, 'Configuration error')
+            return
+
+        if not _origin_allowed(self.headers):
+            self.send_error(403, 'Forbidden')
             return
 
         content_type = self.headers.get('Content-Type', '')
