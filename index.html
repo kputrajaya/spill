@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
     <title>Split Bill</title>
 
     <link rel="icon" href="favicon-16.png" sizes="16x16" />
@@ -10,7 +12,7 @@
     <link rel="icon" href="favicon-96.png" sizes="96x96" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
-    <link href="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css" rel="stylesheet" integrity="sha384-snpJ3knpH6avB6cP1vPkNdmRzCYaCpom/3TNOyvo189BiogXYXQfXkyYpZ2/xADs" crossorigin="anonymous" />
+    <link href="https://cdn.jsdelivr.net/npm/notyf@3.10.0/notyf.min.css" integrity="sha384-snpJ3knpH6avB6cP1vPkNdmRzCYaCpom/3TNOyvo189BiogXYXQfXkyYpZ2/xADs" crossorigin="anonymous" rel="stylesheet" />
     <link href="site.css" rel="stylesheet" />
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" defer integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
@@ -22,198 +24,300 @@
   </head>
 
   <body>
-    <div class="container" x-data="spill">
-      <div class="my-4">
-        <h1 class="fs-4 fw-bold">Split Bill</h1>
-        <h6 class="fs-7 text-secondary">Enter total paid, item prices, then map to respective people.</h6>
-      </div>
-      <div class="d-flex justify-content-between align-items-center">
-        <label class="form-label fs-5">Input</label>
-        <button class="btn btn-sm btn-secondary mb-2" type="button" @click="uploadImage">&#128247;&nbsp;Scan</button>
-      </div>
-      <div>
-        <label for="totalInput" class="form-label mb-1 fs-7 fw-bold">Total</label>
-        <input id="totalInput" type="number" class="form-control" x-model="total" />
-      </div>
-      <div class="row mt-1 gx-1">
-        <div class="col-6">
-          <label for="itemsInput" class="form-label mb-1 fs-7 fw-bold"> Items </label>
-          <textarea id="itemsInput" class="list-input form-control" rows="3" x-model="items"></textarea>
+    <div class="container page" x-data="spill">
+      <header class="page-head">
+        <h1>&#128176; Split Bill</h1>
+        <button class="btn btn-quiet" type="button" @click="scanReceipt">Scan</button>
+      </header>
+
+      <!-- Input -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Input</span>
         </div>
-        <div class="col-6">
-          <label for="peopleInput" class="form-label mb-1 fs-7 fw-bold"> People </label>
+
+        <div class="field-block">
+          <label class="field-label" for="totalInput">
+            Total paid
+            <span class="help-mark" title="defaults to item price total">&#8505;&#65039;</span>
+          </label>
+          <input
+            id="totalInput"
+            class="form-control"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="75000"
+            x-model="totalPaid"
+          />
+          
+        </div>
+
+        <div class="field-block">
+          <label class="field-label" for="itemsInput">
+            Item prices
+            <span class="help-mark" title="Either prices only or with names">&#8505;&#65039;</span>
+          </label>
           <textarea
-            id="peopleInput"
-            class="list-input form-control"
+            id="itemsInput"
+            class="form-control list-input"
             rows="3"
-            x-model="people"
+            x-model="itemText"
+            placeholder="27500&#10;25000&#10;Nasi Goreng 30.000"
           ></textarea>
+          
+          <p class="help help-warn mt-2 mb-0" x-show="warning" x-text="warning"></p>
         </div>
-      </div>
-      <div class="form-check m-0 mt-2 fs-7 text-secondary">
-        <input type="checkbox" class="form-check-input" id="roundDecimalsCheck" x-model="roundDecimals" />
-        <label class="form-check-label" for="roundDecimalsCheck">Round decimals</label>
-      </div>
-      <div class="mt-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <label class="form-label fs-5">Output</label>
-          <div class="mb-2">
-            <button class="btn btn-sm btn-secondary" type="button" @click="copySummary">&#128203;&nbsp;Summary</button>
-            <button class="btn btn-sm btn-secondary" type="button" @click="copyLink">&#128279;&nbsp;Link</button>
+
+        <div class="field-block">
+          <label class="field-label" for="namesInput">
+            People
+            <span class="help-mark" title="One name per line">&#8505;&#65039;</span>
+          </label>
+          <textarea
+            id="namesInput"
+            class="form-control list-input"
+            rows="3"
+            x-model="nameText"
+            autocomplete="off"
+            placeholder="ANI&#10;ROY"
+            @blur="normalizeNames()"
+          ></textarea>
+          
+        </div>
+
+        <div class="field-block field-block-last">
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
+            <label class="form-check-label help" for="roundWholeInput">Round to whole numbers</label>
           </div>
         </div>
-        <template x-if="error">
-          <div class="text-danger" x-text="error"></div>
-        </template>
-        <template x-if="billData">
-          <div class="table-responsive">
-            <table class="table table-sm table-bordered mb-0 fs-7 text-end text-nowrap bg-white">
-              <tr class="table-dark">
-                <th class="text-start">ITEM</th>
-                <th>PRICE</th>
-                <th>W.&nbsp;FEE&nbsp;(<span x-text="formatNumber(billData?.feePercentage, 0)"></span>%)</th>
-                <template x-for="person in billData?.people">
-                  <th x-text="person"></th>
+      </section>
+
+      <!-- Assign -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Assign</span>
+        </div>
+        <p class="help mb-0" x-show="!items.length || !people.length">Add prices and people to start assigning</p>
+
+        <div class="item-list" x-show="items.length && people.length">
+          <template x-for="item in items" :key="item.index">
+            <div class="item-row">
+              <span class="item-label" x-text="item.label || `Item ${item.index + 1}`"></span>
+              <span class="item-price" x-text="formatAmount(item.price)"></span>
+              <div class="item-chips">
+                <button
+                  type="button"
+                  class="chip"
+                  :class="{ 'is-on': item.shareCount === 0 }"
+                  @click="shareEveryone(item.index)"
+                >
+                  Everyone
+                </button>
+                <template x-for="person in people" :key="person">
+                  <button type="button" class="chip" :class="{ 'is-on': item.shares[person] > 0 }" @click="cycleShare(item.index, person)">
+                    <span x-text="person"></span>
+                    <span class="chip-weight" x-show="item.shares[person] > 1" x-text="`×${item.shares[person]}`"></span>
+                  </button>
                 </template>
-              </tr>
-              <template x-for="item in billData?.items">
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Result -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Result</span>
+          <div class="d-flex gap-2">
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
+          </div>
+        </div>
+
+        <template x-if="error">
+          <p class="help help-warn mb-0" x-text="error"></p>
+        </template>
+        <template x-if="!error && !bill">
+          <p class="help mb-0">Add prices and people to view result</p>
+        </template>
+
+        <template x-if="bill">
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
                 <tr>
-                  <td class="table-light text-start" x-text="item.no"></td>
-                  <td class="table-light" x-text="formatNumber(item.price)"></td>
-                  <td class="table-light" x-text="formatNumber(item.priceWithFee)"></td>
-                  <template x-for="person in billData?.people">
-                    <td x-text="formatNumber(item.people[person])"></td>
+                  <th class="t-start">Price</th>
+                  <th>
+                    W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)&nbsp;<span class="help-mark" title="Total might differ due to rounding">&#8505;&#65039;</span>
+                  </th>
+                  <template x-for="person in bill.people" :key="person">
+                    <th x-text="person"></th>
                   </template>
                 </tr>
-              </template>
-              <tr>
-                <th class="table-light text-start c-help" title="Total with fee might differ due to rounding">
-                  TOTAL<span class="fw-normal">&#10068;</span>
-                </th>
-                <th class="table-light" x-text="formatNumber(billData?.totalPrice)"></th>
-                <th class="table-light" x-text="formatNumber(billData?.totalPriceWithFee)"></th>
-                <template x-for="person in billData?.people">
-                  <th class="table-warning" x-text="formatNumber(billData?.peopleTotal[person])"></th>
+              </thead>
+              <tbody>
+                <template x-for="item in bill.items" :key="item.index">
+                  <tr>
+                    <td class="t-start" x-text="formatAmount(item.price)"></td>
+                    <td x-text="formatAmount(item.priceWithFee)"></td>
+                    <template x-for="person in bill.people" :key="person">
+                      <td x-text="formatAmount(item.shares[person])"></td>
+                    </template>
+                  </tr>
                 </template>
-              </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th class="t-start" x-text="formatAmount(bill.subtotal)"></th>
+                  <th x-text="formatAmount(bill.total)"></th>
+                  <template x-for="person in bill.people" :key="person">
+                    <th class="t-strong" x-text="formatAmount(bill.totals[person])"></th>
+                  </template>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </template>
-      </div>
-      <div class="mt-5 mb-4">
-        <div class="accordion" id="accordionMBR">
-          <div class="accordion-item">
-            <h2 class="accordion-header">
-              <button
-                class="accordion-button text-bg-light fs-7 py-2 px-3 collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseMBR"
-              >
-                <span class="badge text-bg-warning me-2 fw-normal">Advanced</span>
-                Stack Bills
-              </button>
-            </h2>
-            <div id="collapseMBR" class="accordion-collapse collapse" data-bs-parent="#accordionMBR">
-              <div class="accordion-body">
-                <div class="d-flex justify-content-between align-items-center">
-                  <label class="form-label fs-5">Bills</label>
-                  <div class="mb-2">
-                    <button class="btn btn-sm btn-secondary" type="button" @click="mbrSave">&#128190;&nbsp;Save Current</button>
-                    <button class="btn btn-sm btn-secondary" type="button" @click="mbrClear">&#128465;&nbsp;Clear</button>
-                  </div>
-                </div>
+      </section>
 
-                <div class="text-danger" x-show="!mbrData.bills.length">Start by saving current bill!</div>
-                <template x-if="mbrData.bills.length">
-                  <div>
-                    <div class="table-responsive">
-                      <table class="table table-sm table-bordered mb-0 fs-7 text-end text-nowrap bg-white">
-                        <tr class="table-dark">
-                          <th class="text-start">BILL</th>
-                          <th>TOTAL</th>
-                          <template x-for="person in mbrData.people">
+      <!-- Stacked bills -->
+      <div class="accordion accordion-flush mt-4" id="stackAccordion">
+        <div class="accordion-item surface stack-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#stackBody">
+              <span class="section-title">Stack bills</span>
+              <span class="help ms-2" x-show="stack.bills.length" x-text="`${stack.bills.length} saved`"></span>
+            </button>
+          </h2>
+
+          <div id="stackBody" class="accordion-collapse collapse" data-bs-parent="#stackAccordion">
+            <div class="accordion-body">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-sm-4">
+                  <label class="field-label" for="stackPayer">Who paid?</label>
+                  <select id="stackPayer" class="form-select" x-model="stackPayer">
+                    <option value="">Select a person</option>
+                    <template x-for="person in payerOptions" :key="person">
+                      <option :value="person" x-text="person"></option>
+                    </template>
+                  </select>
+                </div>
+                <div class="col-12 col-sm-4">
+                  <label class="field-label" for="stackNote">Bill name</label>
+                  <input id="stackNote" class="form-control" type="text" maxlength="40" placeholder="Optional" x-model="stackNote" />
+                </div>
+                <div class="col-12 col-sm-4 d-grid">
+                  <button class="btn btn-quiet" type="button" @click="saveBill()">Save current bill</button>
+                </div>
+              </div>
+
+              <hr class="rule" />
+
+              <p class="help mb-0" x-show="!stack.bills.length">Save the current bill to settle several bills later</p>
+
+              <template x-if="stack.bills.length">
+                <div>
+                  <div class="section-head">
+                    <span class="section-title">Bills</span>
+                    <button class="btn btn-quiet btn-sm" type="button" @click="clearBills()">Clear</button>
+                  </div>
+
+                  <div class="table-wrap">
+                    <table class="tbl">
+                      <thead>
+                        <tr>
+                          <th class="t-start">Bill</th>
+                          <th>Total</th>
+                          <template x-for="person in stack.people" :key="person">
                             <th x-text="person"></th>
                           </template>
-                          <th class="text-center" style="width:1%">ACTION</th>
+                          <th class="t-center"></th>
                         </tr>
-                        <template x-for="(bill, billIndex) in mbrData.bills">
+                      </thead>
+                      <tbody>
+                        <template x-for="(savedBill, billIndex) in stack.bills" :key="billIndex">
                           <tr>
-                            <td class="table-light text-start">
-                              <span x-text="bill.note || (billIndex + 1)"></span>
-                            </td>
-                            <td class="table-light" x-text="formatNumber(bill.totalPriceWithFee)"></td>
-                            <template x-for="person in mbrData.people">
+                            <td class="t-start" x-text="savedBill.note || billIndex + 1"></td>
+                            <td x-text="formatAmount(savedBill.total)"></td>
+                            <template x-for="person in stack.people" :key="person">
                               <td>
+                                <span class="tag" title="This person paid the bill" x-show="savedBill.payer === person">P</span>
                                 <span
-                                  class="badge rounded-pill text-bg-secondary c-help"
-                                  title="This person paid the bill"
-                                  x-show="bill.payer === person"
-                                >
-                                  P
-                                </span>
-                                <span
-                                  x-text="bill.peopleTotal[person] ? formatNumber(bill.peopleTotal[person]) : ''"
+                                  x-text="savedBill.payer === person || savedBill.totals[person] ? formatAmount(savedBill.totals[person] || 0) : ''"
                                 ></span>
                               </td>
                             </template>
-                            <td class="table-light text-center">
-                              <button
-                                type="button"
-                                class="badge rounded-pill text-bg-danger border-0"
-                                title="Delete this bill"
-                                @click="mbrDelete(billIndex)"
-                              >
-                                &#10006;
+                            <td class="t-center">
+                              <button type="button" class="btn-x" title="Delete this bill" @click="deleteBill(billIndex)">
+                                &times;
                               </button>
                             </td>
                           </tr>
                         </template>
-                        <tr class="table-light">
-                          <th class="text-start">TOTAL SPENT</th>
-                          <th class="align-middle" rowspan="3" x-text="formatNumber(mbrComputed.totalSpentAll)"></th>
-                          <template x-for="spent in mbrComputed.listTotalSpent">
-                            <th class="table-warning" x-text="formatNumber(spent)"></th>
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <th class="t-start">Total spent</th>
+                          <th x-text="formatAmount(stackTotals.total)"></th>
+                          <template x-for="(amount, i) in stackTotals.spent" :key="i">
+                            <th x-text="formatAmount(amount)"></th>
                           </template>
-                          <th rowspan="3"></th>
+                          <th></th>
                         </tr>
-                        <tr class="table-light">
-                          <th class="text-start">TOTAL PAID</th>
-                          <template x-for="paid in mbrComputed.listTotalPaid">
-                            <th class="table-warning" x-text="formatNumber(paid)"></th>
+                        <tr>
+                          <th class="t-start">Total paid</th>
+                          <th></th>
+                          <template x-for="(amount, i) in stackTotals.paid" :key="i">
+                            <th x-text="formatAmount(amount)"></th>
                           </template>
+                          <th></th>
                         </tr>
-                        <tr class="table-light">
-                          <th class="text-start">BALANCE</th>
-                          <template x-for="balance in mbrComputed.listBalances">
-                            <th class="table-warning" x-text="formatNumber(balance)"></th>
+                        <tr>
+                          <th class="t-start">Balance</th>
+                          <th></th>
+                          <template x-for="(amount, i) in stackTotals.balances" :key="i">
+                            <th x-text="formatAmount(amount)"></th>
                           </template>
+                          <th></th>
                         </tr>
-                      </table>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                      <label class="form-label fs-5 mb-0">Settlement</label>
-                      <button class="btn btn-sm btn-secondary" type="button" @click="mbrCopy">&#128203;&nbsp;Summary</button>
-                    </div>
-                    <div class="table-responsive mt-2">
-                      <table class="table table-sm table-bordered mb-0 fs-7 text-nowrap bg-white">
-                        <tr class="table-dark">
-                          <th class="text-start">FROM</th>
-                          <th class="text-start">TO</th>
-                          <th class="text-end">AMOUNT</th>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  <hr class="rule" />
+
+                  <div class="section-head">
+                    <span class="section-title">Settlement</span>
+                    <button class="btn btn-quiet btn-sm" type="button" @click="copySettlement">Copy summary</button>
+                  </div>
+
+                  <p class="help mb-0" x-show="!stackTotals.transfers.length">No settlement needed</p>
+
+                  <div class="table-wrap" x-show="stackTotals.transfers.length">
+                    <table class="tbl tbl-settle">
+                      <thead>
+                        <tr>
+                          <th class="t-start">From</th>
+                          <th class="t-start">To</th>
+                          <th>Amount</th>
                         </tr>
-                        <template x-for="transaction in mbrComputed.settle">
+                      </thead>
+                      <tbody>
+                        <template x-for="(transfer, i) in stackTotals.transfers" :key="i">
                           <tr>
-                            <td x-text="transaction.from"></td>
-                            <td x-text="transaction.to"></td>
-                            <td class="text-end" x-text="formatNumber(transaction.amount)"></td>
+                            <td class="t-start" x-text="transfer.from"></td>
+                            <td class="t-start" x-text="transfer.to"></td>
+                            <td x-text="formatAmount(transfer.amount)"></td>
                           </tr>
                         </template>
-                      </table>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-                </template>
-              </div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
