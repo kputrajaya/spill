@@ -38,7 +38,8 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 ## Core Behavior
 
 - One Input card holds three fields: **Total paid**, **Item prices**, and **People**. Inputs use the default sans-serif font; the two list fields auto-grow with their content and never scroll internally.
-- Per-field guidance lives in a ℹ️ marker after the label (tooltip via `title`), not in paragraphs under the fields.
+- Input, Assign, and Result are collapsible accordion cards that start open; Stack bills starts collapsed.
+- Per-field guidance stays out of paragraphs under the fields.
 - Prices are entered or pasted into one field; each line (or bare comma/space-separated amount) becomes an item. Lines may carry a name, as `Name 30.000` or `30.000 - Name`, which is kept as the item label.
 - Amounts accept loose input: currency symbols, thousands separators (`.`, `,`, spaces), and decimal commas.
 - People is one name per line (commas/semicolons also split); names are uppercased, deduplicated and sorted on blur, and persisted in `localStorage` under `spill:names`.
@@ -46,7 +47,7 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 - An item with no name selected is shared by everyone in the roster.
 - Tapping a selected name raises its weight (×2, ×3) so an item can split unevenly: `A×2 + B×1` gives A two thirds of that item. Tapping past ×3 unselects the name for that item.
 - Missing prices or names are an empty state, not an error; only an invalid total (non-empty, `<= 0`) errors.
-- The Result table has `Price`, `W. fee (X%)`, then one column per person; its footer shows the subtotal, the total with fee, and each person's total. The fee rounding marker lives next to the fee header.
+- The Result table has `Price`, `W. fee (X%)`, then one column per person; its footer shows the subtotal, the total with fee, and each person's total.
 - The fee is `(paid total - item subtotal) / item subtotal` and is distributed proportionally across items and people. An empty total means no fee.
 - `roundDecimals` controls whether amounts are rounded to whole numbers or two decimal places.
 - The bill is encoded in URL query parameters so the `Link` action can share it: `total`, `items` (prices, newline-separated, written as `|`), `p` (roster, `|`-separated), and `a` (per item, comma-separated `NAME` or `NAME+weight` tokens, items separated by `|`). Legacy links with `people` lines are still read, where a repeated name counts as its weight.
