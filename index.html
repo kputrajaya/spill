@@ -30,178 +30,153 @@
         <button class="btn btn-quiet" type="button" @click="scanReceipt">Scan receipt</button>
       </header>
 
-      <!-- Main cards -->
-      <div class="accordion accordion-flush" id="mainAccordion">
-        <!-- Input -->
-        <div class="accordion-item surface">
-          <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#inputBody" aria-expanded="true" aria-controls="inputBody">
-              <span class="section-title">Input</span>
-            </button>
-          </h2>
-
-          <div id="inputBody" class="accordion-collapse collapse show">
-            <div class="accordion-body">
-              <div class="field-block">
-                <label class="field-label" for="totalInput">
-                  Total paid
-                </label>
-                <input
-                  id="totalInput"
-                  class="form-control"
-                  type="text"
-                  inputmode="decimal"
-                  autocomplete="off"
-                  placeholder="75000"
-                  x-model="totalPaid"
-                />
-
-              </div>
-
-              <div class="field-block">
-                <label class="field-label" for="itemsInput">
-                  Item prices
-                </label>
-                <textarea
-                  id="itemsInput"
-                  class="form-control list-input"
-                  rows="3"
-                  x-model="itemText"
-                  placeholder="27500&#10;25000&#10;Nasi Goreng 30.000"
-                ></textarea>
-
-                <p class="help help-warn mt-2 mb-0" x-show="warning" x-text="warning"></p>
-              </div>
-
-              <div class="field-block">
-                <label class="field-label" for="namesInput">
-                  People
-                </label>
-                <textarea
-                  id="namesInput"
-                  class="form-control list-input"
-                  rows="3"
-                  x-model="nameText"
-                  autocomplete="off"
-                  placeholder="ANI&#10;ROY"
-                  @blur="normalizeNames()"
-                ></textarea>
-
-              </div>
-
-              <div class="field-block field-block-last">
-                <div class="form-check form-switch m-0">
-                  <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
-                  <label class="form-check-label help" for="roundWholeInput">Round to whole numbers</label>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Input -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Input</span>
         </div>
 
-        <!-- Assign -->
-        <div class="accordion-item surface">
-          <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#assignBody" aria-expanded="true" aria-controls="assignBody">
-              <span class="section-title">Assign</span>
-            </button>
-          </h2>
+        <div class="field-block">
+          <label class="field-label" for="totalInput">
+            Total paid
+          </label>
+          <input
+            id="totalInput"
+            class="form-control"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="75000"
+            x-model="totalPaid"
+          />
+        </div>
 
-          <div id="assignBody" class="accordion-collapse collapse show">
-            <div class="accordion-body">
-              <p class="help mb-0" x-show="!items.length || !people.length">Add prices and people to start assigning</p>
+        <div class="field-block">
+          <label class="field-label" for="itemsInput">
+            Item prices
+          </label>
+          <textarea
+            id="itemsInput"
+            class="form-control list-input"
+            rows="3"
+            x-model="itemText"
+            placeholder="27500&#10;25000&#10;Nasi Goreng 30.000"
+          ></textarea>
 
-              <div class="item-list" x-show="items.length && people.length">
-                <template x-for="item in items" :key="item.index">
-                  <div class="item-row">
-                    <span class="item-label" x-text="item.label || `Item ${item.index + 1}`"></span>
-                    <span class="item-price" x-text="formatAmount(item.price)"></span>
-                    <div class="item-chips">
-                      <button
-                        type="button"
-                        class="chip"
-                        :class="{ 'is-on': item.shareCount === 0 }"
-                        @click="shareEveryone(item.index)"
-                      >
-                        Everyone
-                      </button>
-                      <template x-for="person in people" :key="person">
-                        <button type="button" class="chip" :class="{ 'is-on': item.shares[person] > 0 }" @click="cycleShare(item.index, person)">
-                          <span x-text="person"></span>
-                          <span class="chip-weight" x-show="item.shares[person] > 1" x-text="`×${item.shares[person]}`"></span>
-                        </button>
-                      </template>
-                    </div>
-                  </div>
+          <p class="help help-warn mt-2 mb-0" x-show="warning" x-text="warning"></p>
+        </div>
+
+        <div class="field-block">
+          <label class="field-label" for="namesInput">
+            People
+          </label>
+          <textarea
+            id="namesInput"
+            class="form-control list-input"
+            rows="3"
+            x-model="nameText"
+            autocomplete="off"
+            placeholder="ANI&#10;ROY"
+            @blur="normalizeNames()"
+          ></textarea>
+        </div>
+
+        <div class="field-block field-block-last">
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
+            <label class="form-check-label help" for="roundWholeInput">Round to whole numbers</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Assign -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Assign</span>
+        </div>
+        <p class="help mb-0" x-show="!items.length || !people.length">Add prices and people to start assigning</p>
+
+        <div class="item-list" x-show="items.length && people.length">
+          <template x-for="item in items" :key="item.index">
+            <div class="item-row">
+              <span class="item-label" x-text="item.label || `Item ${item.index + 1}`"></span>
+              <span class="item-price" x-text="formatAmount(item.price)"></span>
+              <div class="item-chips">
+                <button
+                  type="button"
+                  class="chip"
+                  :class="{ 'is-on': item.shareCount === 0 }"
+                  @click="shareEveryone(item.index)"
+                >
+                  Everyone
+                </button>
+                <template x-for="person in people" :key="person">
+                  <button type="button" class="chip" :class="{ 'is-on': item.shares[person] > 0 }" @click="cycleShare(item.index, person)">
+                    <span x-text="person"></span>
+                    <span class="chip-weight" x-show="item.shares[person] > 1" x-text="`×${item.shares[person]}`"></span>
+                  </button>
                 </template>
               </div>
             </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Result -->
+      <section class="surface">
+        <div class="section-head">
+          <span class="section-title">Result</span>
+          <div class="d-flex gap-2">
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
           </div>
         </div>
 
-        <!-- Result -->
-        <div class="accordion-item surface">
-          <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#resultBody" aria-expanded="true" aria-controls="resultBody">
-              <span class="section-title">Result</span>
-            </button>
-          </h2>
+        <template x-if="error">
+          <p class="help help-warn mb-0" x-text="error"></p>
+        </template>
+        <template x-if="!error && !bill">
+          <p class="help mb-0">Add prices and people to view result</p>
+        </template>
 
-          <div id="resultBody" class="accordion-collapse collapse show">
-            <div class="accordion-body">
-              <div class="section-actions">
-                <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
-                <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
-              </div>
-
-              <template x-if="error">
-                <p class="help help-warn mb-0" x-text="error"></p>
-              </template>
-              <template x-if="!error && !bill">
-                <p class="help mb-0">Add prices and people to view result</p>
-              </template>
-
-              <template x-if="bill">
-                <div class="table-wrap">
-                  <table class="tbl">
-                    <thead>
-                      <tr>
-                        <th class="t-start">Price</th>
-                        <th>
-                          W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)
-                        </th>
-                        <template x-for="person in bill.people" :key="person">
-                          <th x-text="person"></th>
-                        </template>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <template x-for="item in bill.items" :key="item.index">
-                        <tr>
-                          <td class="t-start" x-text="formatAmount(item.price)"></td>
-                          <td x-text="formatAmount(item.priceWithFee)"></td>
-                          <template x-for="person in bill.people" :key="person">
-                            <td x-text="formatAmount(item.shares[person])"></td>
-                          </template>
-                        </tr>
-                      </template>
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <th class="t-start" x-text="formatAmount(bill.subtotal)"></th>
-                        <th x-text="formatAmount(bill.total)"></th>
-                        <template x-for="person in bill.people" :key="person">
-                          <th class="t-strong" x-text="formatAmount(bill.totals[person])"></th>
-                        </template>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </template>
-            </div>
+        <template x-if="bill">
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th class="t-start">Price</th>
+                  <th>
+                    W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)
+                  </th>
+                  <template x-for="person in bill.people" :key="person">
+                    <th x-text="person"></th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="item in bill.items" :key="item.index">
+                  <tr>
+                    <td class="t-start" x-text="formatAmount(item.price)"></td>
+                    <td x-text="formatAmount(item.priceWithFee)"></td>
+                    <template x-for="person in bill.people" :key="person">
+                      <td x-text="formatAmount(item.shares[person])"></td>
+                    </template>
+                  </tr>
+                </template>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th class="t-start" x-text="formatAmount(bill.subtotal)"></th>
+                  <th x-text="formatAmount(bill.total)"></th>
+                  <template x-for="person in bill.people" :key="person">
+                    <th class="t-strong" x-text="formatAmount(bill.totals[person])"></th>
+                  </template>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </div>
-      </div>
+        </template>
+      </section>
 
       <!-- Stacked bills -->
       <div class="accordion accordion-flush mt-4" id="stackAccordion">

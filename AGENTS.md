@@ -38,7 +38,7 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 ## Core Behavior
 
 - One Input card holds three fields: **Total paid**, **Item prices**, and **People**. Inputs use the default sans-serif font; the two list fields auto-grow with their content and never scroll internally.
-- Input, Assign, and Result are collapsible accordion cards that start open; Stack bills starts collapsed.
+- Input, Assign, and Result are always-expanded cards; Stack bills starts collapsed.
 - Per-field guidance stays out of paragraphs under the fields.
 - Prices are entered or pasted into one field; each line (or bare comma/space-separated amount) becomes an item. Lines may carry a name, as `Name 30.000` or `30.000 - Name`, which is kept as the item label.
 - Amounts accept loose input: currency symbols, thousands separators (`.`, `,`, spaces), and decimal commas.

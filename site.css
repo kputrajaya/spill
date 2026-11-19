@@ -80,13 +80,6 @@ body {
   margin-bottom: 0.6rem;
 }
 
-.section-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
-}
-
 .section-title,
 .field-label {
   display: block;
