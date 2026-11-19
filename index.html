@@ -37,18 +37,18 @@
         </div>
 
         <div class="field-block">
-          <label class="field-label" for="totalInput">
-            Total paid
+          <label class="field-label" for="namesInput">
+            People
           </label>
-          <input
-            id="totalInput"
-            class="form-control"
-            type="text"
-            inputmode="decimal"
+          <textarea
+            id="namesInput"
+            class="form-control list-input"
+            rows="3"
+            x-model="nameText"
             autocomplete="off"
-            placeholder="75000"
-            x-model="totalPaid"
-          />
+            placeholder="ANI&#10;ROY"
+            @blur="normalizeNames()"
+          ></textarea>
         </div>
 
         <div class="field-block">
@@ -67,18 +67,18 @@
         </div>
 
         <div class="field-block">
-          <label class="field-label" for="namesInput">
-            People
+          <label class="field-label" for="totalInput">
+            Total paid
           </label>
-          <textarea
-            id="namesInput"
-            class="form-control list-input"
-            rows="3"
-            x-model="nameText"
+          <input
+            id="totalInput"
+            class="form-control"
+            type="text"
+            inputmode="decimal"
             autocomplete="off"
-            placeholder="ANI&#10;ROY"
-            @blur="normalizeNames()"
-          ></textarea>
+            placeholder="75000"
+            x-model="totalPaid"
+          />
         </div>
 
         <div class="field-block field-block-last">
