@@ -43,7 +43,7 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 - Prices are entered or pasted into one field; each line (or bare comma/space-separated amount) becomes an item. Lines may carry a name, as `Name 30.000` or `30.000 - Name`; the name stays visible in the field but is not used in calculations.
 - Amounts accept loose input: currency symbols, thousands separators (`.`, `,`, spaces), and decimal commas.
 - People's initials is a single-line field; only whitespace separates names, every other symbol is dropped and names keep letters only, so they are uppercased, deduplicated, sorted, and displayed space-separated on blur; they are not persisted and come from input or a share link only.
-- The Item prices field is split 1:2: the price textarea on the left and the untitled chip rows on the right, the latter shown once there are both prices and names. Skipped and blank lines keep an empty chip row so the rows stay aligned with the text. There is no bulk reset, only a per-row `*` chip; the chip rows scroll sideways together as one strip.
+- The Item prices field is split 1:2: the price textarea on the left and the untitled chip rows on the right, the latter shown once there are both prices and names. Skipped and blank lines keep an empty chip row so the rows stay aligned with the text. There is no bulk reset, only a per-row `All` chip; the chip rows scroll sideways together as one strip.
 - An item with no name selected is shared by everyone in the roster.
 - Tapping a selected name cycles ×1 → ×2 → off so an item can split unevenly: `A×2 + B×1` gives A two thirds of that item.
 - Missing prices or names are an empty state, not an error; only an invalid total (non-empty, `<= 0`) errors.

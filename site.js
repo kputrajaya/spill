@@ -524,7 +524,7 @@
 
         /* -------------------------- Assignment ------------------------ */
 
-        // "*" resets an item back to equal shares within the group
+        // "All" resets an item back to equal shares within the group
         shareEveryone(index) {
           this.shares = this.shares.map((shares, i) => (i === index ? {} : shares));
           this.recalculate();
