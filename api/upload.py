@@ -6,13 +6,19 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlsplit
 
 import openai
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 ALLOWED_FORMATS = {'JPEG', 'PNG', 'WEBP'}
-RECEIPT_MODEL = 'gpt-6-luna'
+JPEG_QUALITY = 80
+# Long edge sent to the model. Receipt text stays legible at ~1280 px while the
+# image costs far fewer vision tokens than the original photo.
+MAX_IMAGE_EDGE = 1280
+# OCR-style work does not need a flagship model; override with the
+# RECEIPT_MODEL environment variable to switch tiers without a redeploy.
+RECEIPT_MODEL = os.environ.get('RECEIPT_MODEL', '').strip() or 'gpt-4o-mini'
 
 
 def _origin_allowed(headers):
@@ -39,6 +45,25 @@ def _load_image(image_bytes):
         return image
     except (Image.DecompressionBombError, Image.UnidentifiedImageError, OSError):
         raise ValueError('Invalid image') from None
+
+
+def _prepare_data_url(image_bytes):
+    img = _load_image(image_bytes)
+    # Phone photos carry orientation in EXIF; bake it in so the receipt is upright.
+    img = ImageOps.exif_transpose(img)
+    w, h = img.size
+    scale = MAX_IMAGE_EDGE / max(w, h)
+    if scale < 1:
+        img = img.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
+    # Receipts are high-contrast text: grayscale + autocontrast reads better and
+    # shrinks the payload without touching legibility.
+    if img.mode != 'L':
+        img = img.convert('L')
+    img = ImageOps.autocontrast(img, cutoff=1)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=JPEG_QUALITY, optimize=True)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return f'data:image/jpeg;base64,{b64}'
 
 
 class handler(BaseHTTPRequestHandler):
@@ -90,22 +115,10 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            img = _load_image(image_bytes)
+            data_url = _prepare_data_url(image_bytes)
         except ValueError as exc:
             self.send_error(400, str(exc))
             return
-
-        max_dim = 2000
-        w, h = img.size
-        if w > max_dim or h > max_dim:
-            ratio = min(max_dim / w, max_dim / h)
-            img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        buf = io.BytesIO()
-        img.save(buf, format='JPEG', quality=80)
-        b64 = base64.b64encode(buf.getvalue()).decode()
-        data_url = f'data:image/jpeg;base64,{b64}'
 
         try:
             prompt = '''
@@ -137,7 +150,7 @@ class handler(BaseHTTPRequestHandler):
                         'role': 'user',
                         'content': [
                             {'type': 'text', 'text': prompt},
-                            {'type': 'image_url', 'image_url': {'url': data_url}},
+                            {'type': 'image_url', 'image_url': {'url': data_url, 'detail': 'high'}},
                         ],
                     }
                 ],

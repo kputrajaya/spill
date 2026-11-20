@@ -14,7 +14,7 @@ Run the static site locally with:
 python -m http.server
 ```
 
-Receipt scanning requires the Vercel function, Python dependencies, and an `OPENAI_API_KEY` environment variable. Use Vercel CLI for local API testing:
+Receipt scanning requires the Vercel function, Python dependencies, and an `OPENAI_API_KEY` environment variable. `RECEIPT_MODEL` optionally overrides the vision model (defaults to a cheap vision tier). Use Vercel CLI for local API testing:
 
 ```bash
 python -m pip install -r requirements.txt
