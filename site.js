@@ -8,65 +8,16 @@
     jpegQuality: 0.7,
     maxShare: 3,
     maxNameLength: 24,
-    maxLabelLength: 48,
   };
 
+  // The only state that persists is the stacked bills and the rounding switch
   const STORAGE = {
-    names: 'spill:names',
     bills: 'spill:bills',
     roundWhole: 'spill:roundWhole',
-    legacyNames: 'spill:roster',
-    legacyBills: '_x_mbrData',
-    legacyRoundWhole: '_x_roundDecimals',
   };
 
   const AMOUNT_TOKEN = /^\d[\d.,]*$/;
-  const CURRENCY_PREFIX = /^(?:rp|idr|usd|sgd|myr|thb|php|vnd|aud|eur|gbp)\b\.?[\s-]*/i;
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  /* ------------------------------------------------------------------ */
-  /* Storage                                                           */
-  /* ------------------------------------------------------------------ */
-
-  const readStorage = (key) => {
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  };
-
-  const writeStorage = (key, value) => {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {}
-  };
-
-  // Names were stored as a JSON array before the People field existed
-  const migrateStorage = () => {
-    if (readStorage(STORAGE.names) == null) {
-      const legacy = readStorage(STORAGE.legacyNames);
-      try {
-        const parsed = legacy ? JSON.parse(legacy) : null;
-        if (Array.isArray(parsed)) {
-          writeStorage(STORAGE.names, parsed.map(sanitizeName).filter(Boolean).sort().join('\n'));
-        }
-      } catch {}
-    }
-
-    // Persisted Alpine state was renamed, so carry the old values over once
-    if (readStorage(STORAGE.bills) == null) {
-      const legacy = readStorage(STORAGE.legacyBills);
-      if (legacy) writeStorage(STORAGE.bills, legacy);
-    }
-    if (readStorage(STORAGE.roundWhole) == null) {
-      const legacy = readStorage(STORAGE.legacyRoundWhole);
-      if (legacy) writeStorage(STORAGE.roundWhole, legacy);
-    }
-  };
-
-  const readNames = () => readStorage(STORAGE.names) ?? '';
-  const writeNames = (text) => writeStorage(STORAGE.names, text);
 
   /* ------------------------------------------------------------------ */
   /* Numbers                                                           */
@@ -115,34 +66,26 @@
   /* Text                                                              */
   /* ------------------------------------------------------------------ */
 
-  const sanitizeLabel = (value) =>
-    String(value || '')
-      .replace(CURRENCY_PREFIX, '')
-      .replace(/^[\s\-–—:;•*@#|]+/, '')
-      .replace(/[\s\-–—:;•*@#|]+$/, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, CONFIG.maxLabelLength);
-
+  // Names are letters only; anything else is dropped
   const sanitizeName = (value) =>
     String(value || '')
       .toUpperCase()
-      .replace(/[,|+&=#%?/\\]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
+      .replace(/[^A-Z]/g, '')
       .slice(0, CONFIG.maxNameLength);
 
   const parseNames = (text) => {
     const names = new Set();
     String(text || '')
-      .split(/[\n,;]+/)
+      .split(/\s+/)
       .map(sanitizeName)
       .filter(Boolean)
       .forEach((name) => names.add(name));
     return [...names].sort();
   };
 
-  // One entry per line: "30000", "Nasi Goreng 30.000" or "30.000 - Nasi Goreng"
+  // One entry per line: "30000", "Nasi Goreng 30.000" or "30.000 - Nasi Goreng".
+  // `lines` keeps one slot per visual line (item indexes, or empty when skipped)
+  // so the chip rows can stay aligned with the textarea.
   const parseItems = (raw) => {
     let text = String(raw || '').replace(/\r/g, '');
     for (let i = 0; i < 3; i++) {
@@ -150,62 +93,76 @@
     }
 
     const items = [];
+    const lines = [];
     let skipped = 0;
 
-    const addItem = (label, token) => {
+    const addItem = (token) => {
       const price = parseNumber(token);
       if (!(price > 0)) {
         skipped++;
-        return;
+        return null;
       }
-      items.push({ price, label: sanitizeLabel(label) });
+      items.push({ price });
+      return items.length - 1;
     };
 
-    text.split(/[\n;]+/).forEach((line) => {
-      // Split only on commas that separate entries, never inside "30,000"
-      const segments = line.split(/(?<=\D)\s*,\s*|\s*,\s*(?=\D)/);
-      for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i].trim();
-        if (!segment) continue;
+    const hasContent = text.trim().length > 0;
+    text.split('\n').forEach((line) => {
+      const lineItems = [];
+      const skippedBefore = skipped;
+      const add = (token) => {
+        const index = addItem(token);
+        if (index !== null) lineItems.push(index);
+      };
 
-        // Glue a fragment without an amount onto the following segment
-        if (!/\d/.test(segment) && i + 1 < segments.length) {
-          segments[i + 1] = `${segment} ${segments[i + 1]}`;
-          continue;
-        }
+      line.split(';').forEach((chunk) => {
+        // Split only on commas that separate entries, never inside "30,000"
+        const segments = chunk.split(/(?<=\D)\s*,\s*|\s*,\s*(?=\D)/);
+        for (let i = 0; i < segments.length; i++) {
+          const segment = segments[i].trim();
+          if (!segment) continue;
 
-        // No letters: a bare list of amounts ("30000 27500 9000")
-        if (!/[A-Za-z]/.test(segment)) {
-          const amounts = segment.split(/[\s,]+/).filter((token) => /\d/.test(token));
-          if (!amounts.length) {
+          // Glue a fragment without an amount onto the following segment
+          if (!/\d/.test(segment) && i + 1 < segments.length) {
+            segments[i + 1] = `${segment} ${segments[i + 1]}`;
+            continue;
+          }
+
+          // No letters: a bare list of amounts ("30000 27500 9000")
+          if (!/[A-Za-z]/.test(segment)) {
+            const amounts = segment.split(/[\s,]+/).filter((token) => /\d/.test(token));
+            if (!amounts.length) {
+              skipped++;
+              continue;
+            }
+            amounts.forEach(add);
+            continue;
+          }
+
+          // A label plus one amount
+          const tokens = segment.split(/\s+/);
+          let amountIndex = -1;
+          for (let t = tokens.length - 1; t >= 0; t--) {
+            if (AMOUNT_TOKEN.test(tokens[t])) {
+              amountIndex = t;
+              break;
+            }
+          }
+          if (amountIndex === -1) {
             skipped++;
             continue;
           }
-          amounts.forEach((token) => addItem('', token));
-          continue;
+          add(tokens[amountIndex]);
         }
+      });
 
-        // A label plus one amount
-        const tokens = segment.split(/\s+/);
-        let amountIndex = -1;
-        for (let t = tokens.length - 1; t >= 0; t--) {
-          if (AMOUNT_TOKEN.test(tokens[t])) {
-            amountIndex = t;
-            break;
-          }
-        }
-        if (amountIndex === -1) {
-          skipped++;
-          continue;
-        }
-        addItem(
-          tokens.filter((_, t) => t !== amountIndex).join(' '),
-          tokens[amountIndex]
-        );
-      }
+      // Blank lines count as skipped too, but an empty field is not a skip
+      if (hasContent && !lineItems.length && skipped === skippedBefore) skipped++;
+
+      lines.push(lineItems);
     });
 
-    return { items, skipped };
+    return { items, skipped, lines };
   };
 
   /* ------------------------------------------------------------------ */
@@ -303,8 +260,9 @@
     const creditors = [];
     const debtors = [];
     balances.forEach((balance, index) => {
-      if (balance > 0) debtors.push({ index, amount: balance });
-      else if (balance < 0) creditors.push({ index, amount: -balance });
+      // Positive is credit, negative is debt
+      if (balance < 0) debtors.push({ index, amount: -balance });
+      else if (balance > 0) creditors.push({ index, amount: balance });
     });
     creditors.sort((a, b) => b.amount - a.amount);
     debtors.sort((a, b) => b.amount - a.amount);
@@ -337,6 +295,10 @@
     return transfers;
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Clipboard                                                         */
+  /* ------------------------------------------------------------------ */
+
   const copyToClipboard = async (text) => {
     const field = document.createElement('textarea');
     field.style.opacity = 0;
@@ -362,8 +324,6 @@
   /* ------------------------------------------------------------------ */
 
   document.addEventListener('alpine:init', () => {
-    migrateStorage();
-
     const toast = new Notyf({
       ripple: false,
       position: { x: 'center' },
@@ -378,6 +338,7 @@
         people: [],
         shares: [],
         items: [],
+        pillRows: [],
         payerOptions: [],
         warning: null,
         error: null,
@@ -393,7 +354,6 @@
         init() {
           this.restoreFromUrl();
           this.stack.bills = this.stack.bills.map(normalizeBill);
-          this.stack.people = [...new Set([...this.stack.people, ...this.stack.bills.map((bill) => bill.payer)])].sort();
 
           this.recalculate();
           this.recalculateStack();
@@ -401,10 +361,7 @@
 
           this.$watch('totalPaid', () => this.recalculate());
           this.$watch('itemText', () => this.recalculate());
-          this.$watch('nameText', () => {
-            this.recalculate();
-            writeNames(this.people.join('\n'));
-          });
+          this.$watch('nameText', () => this.recalculate());
           this.$watch('roundWhole', () => {
             this.recalculate();
             this.recalculateStack();
@@ -434,14 +391,24 @@
             }
           }
 
-          this.nameText = linkedPeople.length ? [...new Set(linkedPeople)].sort().join('\n') : readNames();
+          this.nameText = linkedPeople.length ? [...new Set(linkedPeople)].sort().join(' ') : '';
           if (linkedShares) this.shares = linkedShares;
+        },
+
+        // The price field grows with its content instead of scrolling
+        autoSizeLists() {
+          this.$nextTick(() => {
+            document.querySelectorAll('.list-input').forEach((field) => {
+              field.style.height = 'auto';
+              field.style.height = `${field.scrollHeight}px`;
+            });
+          });
         },
 
         /* ---------------------------- Bill ---------------------------- */
 
         recalculate() {
-          const { items, skipped } = parseItems(this.itemText);
+          const { items, skipped, lines } = parseItems(this.itemText);
 
           this.people = parseNames(this.nameText);
           this.payerOptions = [...this.people];
@@ -450,11 +417,21 @@
           this.shares = items.map((_, index) => pruneShares(this.shares[index], this.people));
           this.items = items.map((item, index) => ({
             index,
-            label: item.label,
+            key: `item-${index}`,
             price: item.price,
             shares: this.shares[index],
             shareCount: Object.keys(this.shares[index]).length,
           }));
+
+          // One chip row per visual line, with an empty row where a line was skipped
+          this.pillRows = lines.reduce((rows, lineItems, lineIndex) => {
+            if (!lineItems.length) {
+              rows.push({ key: `skip-${lineIndex}`, placeholder: true, index: -1, shares: {}, shareCount: 0 });
+            } else {
+              lineItems.forEach((index) => rows.push(this.items[index]));
+            }
+            return rows;
+          }, []);
 
           this.syncUrlState();
           this.autoSizeLists();
@@ -503,7 +480,6 @@
 
             const row = {
               index,
-              label: item.label,
               price: this.roundAmount(item.price),
               priceWithFee: this.roundAmount(item.price * (1 + fee)),
               shares: {},
@@ -546,7 +522,9 @@
           writeUrlState(params);
         },
 
-        // "Everyone" resets an item back to equal shares within the group
+        /* -------------------------- Assignment ------------------------ */
+
+        // "Shared" resets an item back to equal shares within the group
         shareEveryone(index) {
           this.shares = this.shares.map((shares, i) => (i === index ? {} : shares));
           this.recalculate();
@@ -565,19 +543,8 @@
         },
 
         normalizeNames() {
-          const text = this.people.join('\n');
+          const text = parseNames(this.nameText).join(' ');
           if (text !== this.nameText) this.nameText = text;
-          writeNames(text);
-          this.autoSizeLists();
-        },
-
-        autoSizeLists() {
-          this.$nextTick(() => {
-            document.querySelectorAll('.list-input').forEach((field) => {
-              field.style.height = 'auto';
-              field.style.height = `${field.scrollHeight}px`;
-            });
-          });
         },
 
         /* --------------------------- Receipt -------------------------- */
@@ -663,8 +630,7 @@
         /* ------------------------- Stacked bills ---------------------- */
 
         saveBill() {
-          const people = this.bill?.people || [];
-          if (!people.length) {
+          if (!this.bill?.people?.length) {
             toast.error('Bill is invalid!');
             return;
           }
@@ -675,7 +641,6 @@
             return;
           }
 
-          this.stack.people = [...new Set([...this.stack.people, ...people, payer])].sort();
           this.stack.bills.push({
             payer,
             note: (this.stackNote || '').trim() || formatTimestamp(new Date()),
@@ -710,16 +675,27 @@
         recalculateStack() {
           if (!this.stack.bills.length) {
             this.stackTotals = null;
+            if (this.stack.people.length) this.stack.people = [];
             return;
           }
 
           const bills = this.stack.bills;
-          const people = [...new Set([...this.stack.people, ...bills.map((bill) => bill.payer)])].sort();
+          // Only people who paid or owe something keep a column
+          const people = [
+            ...new Set(
+              bills.flatMap((bill) => [
+                bill.payer,
+                ...Object.entries(bill.totals)
+                  .filter(([, amount]) => amount > 0)
+                  .map(([person]) => person),
+              ])
+            ),
+          ].sort();
           if (people.join('|') !== this.stack.people.join('|')) this.stack.people = people;
 
           const spent = people.map(() => 0);
           const paid = people.map(() => 0);
-          // Positive balance means the person owes money
+          // Positive is credit, negative is debt
           const ledger = Object.fromEntries(people.map((person) => [person, 0]));
           let total = 0;
 
@@ -731,8 +707,8 @@
             });
             Object.entries(bill.totals).forEach(([person, amount]) => {
               if (bill.payer === person) return;
-              ledger[person] += amount;
-              ledger[bill.payer] -= amount;
+              ledger[person] -= amount;
+              ledger[bill.payer] += amount;
             });
           });
 

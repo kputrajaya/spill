@@ -11,16 +11,17 @@
   --surface: #ffffff;
   --canvas: #f4f4f4;
   --radius: 16px;
+  --warn-bg: #fdecea;
+  --warn-ink: #a11912;
 
   /* Stack bills accent */
   --stack-bg: #fdf8e4;
-  --stack-border: #eee1ba;
-  --stack-line: #e7dcb8;
-  --stack-line-strong: #ddcf9f;
-  --stack-field: #dfd2ad;
+  --stack-border: #f2e8cc;
+  --stack-line: #efe5c6;
+  --stack-line-strong: #e5d9b3;
+  --stack-input: #fdf9ec;
   --stack-button: #f4e9c3;
   --stack-button-hover: #ecdcab;
-  --stack-ink: #4a3b12;
   --stack-accent: #c2410c;
 }
 
@@ -43,7 +44,7 @@ body {
 /* ------------------------------------------------------------------ */
 
 .container {
-  max-width: 720px;
+  max-width: 960px;
 }
 
 .page {
@@ -91,6 +92,11 @@ body {
   color: var(--muted);
 }
 
+/* Main card titles read in ink; nested stack sub-sections stay muted */
+.surface > .section-head > .section-title {
+  color: var(--ink);
+}
+
 .help {
   font-size: 0.74rem;
   line-height: 1.45;
@@ -98,9 +104,9 @@ body {
 }
 
 .help-warn {
-  color: var(--ink);
+  color: var(--warn-ink);
   font-weight: 600;
-  background: #eeeeee;
+  background: var(--warn-bg);
   border-radius: 10px;
   padding: 0.45rem 0.6rem;
 }
@@ -109,20 +115,16 @@ body {
 /* Fields                                                              */
 /* ------------------------------------------------------------------ */
 
-.field-block {
-  padding: 0.9rem 0;
-  border-top: 1px solid var(--line);
+.field-block + .field-block {
+  margin-top: 0.9rem;
 }
 .field-block .field-label {
   margin-bottom: 0.45rem;
 }
-.field-block-last {
-  padding-bottom: 0;
-}
 
 .form-control,
 .form-select {
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: 10px;
   background-color: #fff;
   color: var(--ink);
@@ -144,7 +146,7 @@ textarea.form-control {
 
 /* The two list fields grow with their content instead of scrolling */
 textarea.form-control.list-input {
-  min-height: 4.6rem;
+  min-height: 3.9rem;
   overflow-y: hidden;
   resize: none;
 }
@@ -194,6 +196,17 @@ textarea.form-control.list-input {
   color: var(--ink);
 }
 
+.btn-yellow {
+  background: var(--stack-button);
+  border: 1px solid transparent;
+  color: var(--ink);
+}
+.btn-yellow:hover,
+.btn-yellow:focus {
+  background: var(--stack-button-hover);
+  color: var(--ink);
+}
+
 .btn-x {
   width: 1.45rem;
   height: 1.45rem;
@@ -219,7 +232,7 @@ textarea.form-control.list-input {
   align-items: center;
   gap: 0.3rem;
   padding: 0.16rem 0.6rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
   color: var(--ink-soft);
@@ -245,43 +258,54 @@ textarea.form-control.list-input {
   opacity: 0.7;
 }
 
-.item-list {
-  border-top: 1px solid var(--line);
-}
-
-.item-row {
+.items-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'label price'
-    'chips chips';
-  gap: 0.35rem 0.6rem;
-  padding: 0.65rem 0 0.6rem;
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  column-gap: 0.6rem;
+  align-items: start;
 }
-.item-row:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+/* The left column collapses into the grid so the textarea and the chip strip
+   can share row 2, lining up their first rows. */
+.items-prices {
+  display: contents;
+}
+.items-prices > .field-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+.items-prices > .list-input {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+  /* One text line per chip row: 1.75rem pitch on both sides */
+  line-height: 1.75rem;
+  /* Long price lines scroll sideways instead of wrapping, keeping rows aligned */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.items-assign {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+.item-pills {
+  display: flex;
+  flex-direction: column;
+  /* Match the textarea's border + padding so the first rows line up */
+  padding-top: calc(0.375rem + 1px);
+  /* All chip rows scroll together as one strip */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
-.item-label {
-  grid-area: label;
-  font-size: 0.74rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.item-price {
-  grid-area: price;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
 .item-chips {
-  grid-area: chips;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 0.3rem;
+  width: max-content;
+  height: 1.75rem;
 }
 
 /* ------------------------------------------------------------------ */
@@ -319,21 +343,39 @@ textarea.form-control.list-input {
 .tbl tbody tr:hover td {
   background: #fafafa;
 }
+/* The rule above the totals row matches the header rule */
+.tbl tbody tr:last-child td {
+  border-bottom-color: var(--line-strong);
+}
 .tbl tfoot th {
   border-bottom: 0;
   border-top: 1px solid var(--line-strong);
   font-weight: 700;
   color: var(--ink);
 }
+/* Footer row labels read like the table header */
+.tbl tfoot th.t-start {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--muted);
+}
 
 .t-start {
+  text-align: left;
+}
+.tbl .t-start {
   text-align: left;
 }
 .t-center {
   text-align: center;
 }
+.tbl .t-center {
+  text-align: center;
+}
 .t-strong {
-  background: #f2f2f2;
+  background: var(--stack-bg);
   color: var(--ink);
 }
 
@@ -361,25 +403,29 @@ textarea.form-control.list-input {
 .accordion-flush .accordion-item.surface.stack-item {
   background: var(--stack-bg);
   border-color: var(--stack-border);
+  color: var(--ink);
 }
 .stack-item .accordion-button:hover {
   background: rgba(17, 17, 17, 0.02);
 }
+.stack-item .accordion-button,
+.stack-item .accordion-button .section-title {
+  color: var(--ink);
+}
 .stack-item .accordion-body > .row {
   margin-top: 0.6rem;
 }
-
-.stack-item .rule {
-  margin: 1rem 0 0.9rem;
-  border: 0;
-  border-top: 1px solid var(--stack-line);
-  opacity: 1;
+.stack-item .accordion-body .section-head {
+  margin-top: 1.75rem;
+}
+.stack-item .field-label {
+  margin-bottom: 0.45rem;
 }
 
 .stack-item .form-control,
 .stack-item .form-select {
-  border-color: var(--stack-field);
-  background: #fff;
+  border-color: var(--stack-line);
+  background: var(--stack-input);
 }
 .stack-item .form-control:focus,
 .stack-item .form-select:focus {
@@ -389,20 +435,20 @@ textarea.form-control.list-input {
 
 .stack-item .btn-quiet {
   background: var(--stack-button);
-  color: var(--stack-ink);
+  color: var(--ink);
 }
 .stack-item .btn-quiet:hover,
 .stack-item .btn-quiet:focus {
   background: var(--stack-button-hover);
-  color: #3a2e0d;
+  color: var(--ink);
 }
 .stack-item .btn-x {
   background: var(--stack-button);
-  color: #6b5416;
+  color: var(--ink);
 }
 .stack-item .btn-x:hover {
-  background: var(--stack-accent);
-  color: #fff;
+  background: var(--stack-button-hover);
+  color: var(--ink);
 }
 
 .stack-item .tbl th,
@@ -416,12 +462,18 @@ textarea.form-control.list-input {
   background: rgba(17, 17, 17, 0.03);
 }
 /* The line above the summary rows matches the header rule; inner rows stay thin */
+.stack-item .tbl tbody tr:last-child td {
+  border-bottom-color: var(--stack-line-strong);
+}
 .stack-item .tbl tfoot th {
   border-top: 1px solid var(--stack-line);
   border-bottom: 0;
 }
 .stack-item .tbl tfoot tr:first-child th {
   border-top: 1px solid var(--stack-line-strong);
+}
+.stack-item .tbl tfoot tr:last-child th {
+  border-top-color: var(--stack-line-strong);
 }
 
 .stack-item .tag {
