@@ -6,7 +6,7 @@
   const CONFIG = {
     maxImagePx: 2000,
     jpegQuality: 0.7,
-    maxShare: 3,
+    maxShare: 2,
     maxNameLength: 24,
   };
 
@@ -524,13 +524,13 @@
 
         /* -------------------------- Assignment ------------------------ */
 
-        // "Shared" resets an item back to equal shares within the group
+        // "*" resets an item back to equal shares within the group
         shareEveryone(index) {
           this.shares = this.shares.map((shares, i) => (i === index ? {} : shares));
           this.recalculate();
         },
 
-        // Tap cycles ×1 → ×2 → ×3 → off
+        // Tap cycles ×1 → ×2 → off
         cycleShare(index, name) {
           const current = this.shares[index] || {};
           const weight = (current[name] || 0) >= CONFIG.maxShare ? 0 : (current[name] || 0) + 1;

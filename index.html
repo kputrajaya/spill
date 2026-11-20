@@ -42,14 +42,14 @@
 
         <div class="field-block">
           <label class="field-label" for="namesInput">
-            People
+            People's initials
           </label>
           <input
             id="namesInput"
             class="form-control"
             type="text"
             autocomplete="off"
-            placeholder="ANI BUDI"
+            placeholder="PP MJ"
             x-model="nameText"
             @blur="normalizeNames()"
           />
@@ -81,8 +81,9 @@
                       x-show="!row.placeholder"
                       :class="{ 'is-on': !row.placeholder && row.shareCount === 0 }"
                       @click="shareEveryone(row.index)"
+                      aria-label="Shared by everyone"
                     >
-                      Shared
+                      *
                     </button>
                     <template x-for="person in people" :key="person">
                       <button
@@ -135,7 +136,7 @@
           <p class="help help-warn mb-0" x-text="error"></p>
         </template>
         <template x-if="!error && !bill">
-          <p class="help mb-0">Add prices and people to view result</p>
+          <p class="help mb-0">Add prices and initials to view result</p>
         </template>
 
         <template x-if="bill">

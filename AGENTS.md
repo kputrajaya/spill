@@ -37,15 +37,15 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 
 ## Core Behavior
 
-- One Input card holds three fields: **People**, **Item prices**, and **Total paid (optional)**. Inputs use the default sans-serif font; the price field grows with its content, never scrolls vertically, and scrolls sideways instead of wrapping. Placeholders are `ANI BUDI`, two prices, and `55000`.
+- One Input card holds three fields: **People's initials**, **Item prices**, and **Total paid (optional)**. Inputs use the default sans-serif font; the price field grows with its content, never scrolls vertically, and scrolls sideways instead of wrapping. Placeholders are `PP MJ`, two prices, and `55000`.
 - Input and Result are always-expanded cards; Stack bills starts collapsed.
 - Per-field guidance stays out of paragraphs under the fields.
 - Prices are entered or pasted into one field; each line (or bare comma/space-separated amount) becomes an item. Lines may carry a name, as `Name 30.000` or `30.000 - Name`; the name stays visible in the field but is not used in calculations.
 - Amounts accept loose input: currency symbols, thousands separators (`.`, `,`, spaces), and decimal commas.
-- People is a single-line field; only whitespace separates names, every other symbol is dropped and names keep letters only, so they are uppercased, deduplicated, sorted, and displayed space-separated on blur; they are not persisted and come from input or a share link only.
-- The Item prices field is split 1:2: the price textarea on the left and the untitled chip rows on the right, the latter shown once there are both prices and names. Skipped and blank lines keep an empty chip row so the rows stay aligned with the text. There is no bulk reset, only a per-row `Shared` chip; the chip rows scroll sideways together as one strip.
+- People's initials is a single-line field; only whitespace separates names, every other symbol is dropped and names keep letters only, so they are uppercased, deduplicated, sorted, and displayed space-separated on blur; they are not persisted and come from input or a share link only.
+- The Item prices field is split 1:2: the price textarea on the left and the untitled chip rows on the right, the latter shown once there are both prices and names. Skipped and blank lines keep an empty chip row so the rows stay aligned with the text. There is no bulk reset, only a per-row `*` chip; the chip rows scroll sideways together as one strip.
 - An item with no name selected is shared by everyone in the roster.
-- Tapping a selected name raises its weight (×2, ×3) so an item can split unevenly: `A×2 + B×1` gives A two thirds of that item. Tapping past ×3 unselects the name for that item.
+- Tapping a selected name cycles ×1 → ×2 → off so an item can split unevenly: `A×2 + B×1` gives A two thirds of that item.
 - Missing prices or names are an empty state, not an error; only an invalid total (non-empty, `<= 0`) errors.
 - The Result table has `No`, `Price`, `W. fee (X%)`, then one column per person; its footer starts with `Total` and shows the subtotal, the total with fee, and each person's total. `No`, `Bill`, `From`, and `To` are left-aligned; `Price` and the amounts are right-aligned.
 - The fee is `(paid total - item subtotal) / item subtotal` and is distributed proportionally across items and people. An empty total means no fee.
