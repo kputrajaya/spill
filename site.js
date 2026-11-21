@@ -26,6 +26,8 @@
   /* Money                                                              */
   /* ------------------------------------------------------------------ */
 
+  const AMOUNT_TOKEN = /^\d[\d.,]*$/;
+
   // Accepts "Rp 73.150", "30,000", "30 000", "1.234.567,89", 27500
   const parseNumber = (raw) => {
     if (typeof raw === 'number') return raw;
@@ -57,6 +59,13 @@
 
     const tail = groups.pop();
     return parseFloat(`${groups.join('')}.${tail}`);
+  };
+
+  const parseFirstAmount = (raw) => {
+    const text = String(raw == null ? '' : raw).trim();
+    if (!text) return null;
+    const token = text.split(/\s+/).find((part) => AMOUNT_TOKEN.test(part));
+    return token ? parseNumber(token) : NaN;
   };
 
   const clampShare = (value) => {
@@ -115,8 +124,6 @@
   /* Text                                                              */
   /* ------------------------------------------------------------------ */
 
-  const AMOUNT_TOKEN = /^\d[\d.,]*$/;
-
   // Names are letters only; anything else is dropped
   const sanitizeName = (value) =>
     String(value || '')
@@ -145,8 +152,7 @@
       // Left to right, first standalone amount wins; later numbers
       // (quantities, package sizes, stray totals) are ignored. A token with
       // broken punctuation such as "6x0j00" never matches, so it is skipped.
-      const amountToken = line.split(/\s+/).find((token) => AMOUNT_TOKEN.test(token));
-      const price = amountToken ? parseNumber(amountToken) : NaN;
+      const price = parseFirstAmount(line);
       if (!(price > 0)) return null;
 
       items.push({ price });
@@ -168,11 +174,13 @@
     const totalText = total == null ? '' : String(total).trim();
     if (!totalText && !items.length) return { bill: null, error: null };
 
-    const totalCents = totalText ? toMinor(totalText) : null;
-    if (totalCents !== null && !(totalCents > 0)) {
+    const totalValue = totalText ? parseFirstAmount(totalText) : null;
+    if (totalValue !== null && !(totalValue > 0)) {
       return { bill: null, error: 'Enter a valid total.' };
     }
     if (!items.length) return { bill: null, error: null };
+
+    const totalCents = totalValue === null ? null : toMinor(totalValue);
 
     const priceCents = items.map(toMinor);
     if (priceCents.some((cents) => !(cents > 0))) return { bill: null, error: null };

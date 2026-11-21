@@ -255,6 +255,27 @@ test('calculateBill handles empty and invalid inputs', () => {
   });
 });
 
+test('calculateBill validates totals like item prices', () => {
+  const valid = calculateBill({
+    total: 'Rp 73.150',
+    items: [73150],
+    people: ['PP'],
+    shares: [{}],
+    roundWhole: true,
+  });
+  assert.equal(valid.error, null);
+  assert.equal(valid.bill.total, 73150);
+
+  assert.deepEqual(
+    calculateBill({ total: '6x0j00', items: [6000], people: ['PP'], shares: [{}] }),
+    { bill: null, error: 'Enter a valid total.' }
+  );
+  assert.deepEqual(
+    calculateBill({ total: 'Rp73.150', items: [73150], people: ['PP'], shares: [{}] }),
+    { bill: null, error: 'Enter a valid total.' }
+  );
+});
+
 test('round and format helpers honor the rounding switch', () => {
   assert.equal(toMinor('2.000'), 200000);
   assert.equal(fromMinor(200000), 2000);
