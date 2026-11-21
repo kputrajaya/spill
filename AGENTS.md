@@ -51,7 +51,7 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 - The fee is `(paid total - item subtotal) / item subtotal` and is distributed proportionally across items and people. An empty total means no fee.
 - The `Round numbers` switch (`roundWhole`) toggles between whole numbers and two decimal places.
 - The bill is encoded in URL query parameters so the `Link` action can share it: `total`, `items` (prices, newline-separated, written as `|`), `p` (roster, `|`-separated), and `a` (per item, comma-separated `NAME` or `NAME+weight` tokens, items separated by `|`). Legacy links with `people` lines are still read, where a repeated name counts as its weight.
-- Scanning a receipt fills the total and the price list as `amount - name` lines and clears assignments; it never touches the name list.
+- Scanning a receipt fills the total and the price list as `amount - name` lines and clears assignments; it never touches the initials field. The model preserves printed separators and the API normalizes them, so `2.000`, `2,000`, `2,000.00`, and `2.000,00` all become `2000`.
 - Stacked bills live in the mild-yellow Stack bills card, persisted with Alpine Persist: `Who paid?` and `Bill Name (Optional)` feed the `Save bill` button, and saved bills roll up into Total paid / Total spent / Balance plus the settlement. The stack only tracks people who paid a bill or hold a non-zero share; everyone else is dropped on save, load and delete. The payer may be any name in the roster, including someone with no share of that bill; a payer with no share renders `0` rather than a blank cell.
 - The settlement shows `No settlement needed` (and hides its table) when every balance is zero.
 - Persisted state is limited to `spill:bills` and `spill:roundWhole`; no other keys are read or written.
@@ -72,4 +72,4 @@ Component names to keep consistent when editing: `totalPaid`, `itemText`, `nameT
 
 For frontend-only changes, open the site in a browser and check bill calculation, empty states, shareable links, copy actions, rounding, and stacked-bill settlement. The page must stay free of horizontal overflow at mobile widths (test ~390 px); the price field grows vertically with its content and scrolls sideways instead of wrapping.
 
-For receipt scanning changes, run `vercel dev`, set `OPENAI_API_KEY` in the local environment, and test a representative receipt without logging or committing the image or API key. A scanned receipt should fill the total, produce `amount - name` lines, clear assignments, and leave the People list untouched.
+For receipt scanning changes, run `vercel dev`, set `OPENAI_API_KEY` in the local environment, and test a representative receipt without logging or committing the image or API key. A scanned receipt should fill the total, produce `amount - name` lines, clear assignments, leave the initials field untouched, and normalize `2.000`-style amounts to `2000`.

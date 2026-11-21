@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import os
+import re
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlsplit
 
@@ -30,6 +31,56 @@ def _origin_allowed(headers):
         return urlsplit(headers.get('Origin') or headers.get('Referer') or '').hostname == expected
     except ValueError:
         return False
+
+
+def _normalize_amount(value):
+    """Turn a printed amount into a plain period-decimal string.
+
+    The model is asked to preserve separators exactly as printed, so this is
+    where ambiguous formats are interpreted. A single separator followed by
+    three digits is thousands; one or two digits is decimal. When both kinds
+    appear, the rightmost one is the decimal separator.
+    """
+    if not isinstance(value, str):
+        return value
+
+    text = re.sub(r'[^\d.,]', '', value)
+    if not text:
+        return None
+
+    dot = text.rfind('.')
+    comma = text.rfind(',')
+    if dot == -1 and comma == -1:
+        return text
+
+    both = dot != -1 and comma != -1
+    if both:
+        decimal_sep = '.' if dot > comma else ','
+        thousands_sep = ',' if decimal_sep == '.' else '.'
+        text = text.replace(thousands_sep, '')
+    else:
+        separator = '.' if dot != -1 else ','
+        groups = text.split(separator)
+        if len(groups) > 1 and len(groups[-1]) == 3:
+            return ''.join(groups)
+        decimal_sep = separator
+
+    groups = text.split(decimal_sep)
+    tail = groups.pop()
+    return f"{''.join(groups)}.{tail}"
+
+
+def _normalize_receipt(receipt):
+    if not isinstance(receipt, dict):
+        return receipt
+
+    receipt['total'] = _normalize_amount(receipt.get('total'))
+    items = receipt.get('items')
+    if isinstance(items, list):
+        for item in items:
+            if isinstance(item, dict):
+                item['amount'] = _normalize_amount(item.get('amount'))
+    return receipt
 
 
 def _load_image(image_bytes):
@@ -134,10 +185,11 @@ class handler(BaseHTTPRequestHandler):
                 or change as purchased items. Use the final amount due as the grand total, not the
                 subtotal, tax, or amount tendered.
 
-                Normalize monetary values: omit currency symbols and thousands separators, use a
-                period as the decimal separator, and include two decimal places. If both comma and
-                period appear, the rightmost is the decimal separator. If only one separator kind
-                appears and exactly three digits follow it, treat it as a thousands separator.
+                Transcribe monetary values exactly as printed: keep every digit and every comma or
+                period, and never convert, round, or simplify them yourself. The printed forms
+                2.000, 2,000, 2,000.00, and 2.000,00 all mean two thousand and must stay exactly
+                as printed so they can be normalized afterwards. Omit only currency symbols and
+                unrelated text. For a plain unseparated value, preserve all digits.
 
                 If text or an amount is unreadable or ambiguous, use null for that value. Never
                 infer or guess from context.
@@ -197,7 +249,7 @@ class handler(BaseHTTPRequestHandler):
             if content.startswith('```'):
                 content = content.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
             try:
-                items = json.loads(content)
+                receipt = _normalize_receipt(json.loads(content))
             except json.JSONDecodeError:
                 self.send_error(500, 'Failed to parse receipt')
                 return
@@ -205,6 +257,6 @@ class handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(items).encode())
+            self.wfile.write(json.dumps(receipt).encode())
         except Exception:
             self.send_error(500, 'Failed to process image')
