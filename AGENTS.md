@@ -77,7 +77,7 @@ Component methods to keep consistent when editing: `recalculate()`, `recalculate
 - The Item prices field is split 1:2: the price textarea on the left and the untitled chip rows on the right, the latter shown once there are both prices and names. Skipped and blank lines keep an empty chip row so the rows stay aligned with the text. There is no bulk reset, only a per-row `All` chip; the chip rows scroll sideways together as one strip.
 - An item with no name selected is shared by everyone in the roster.
 - Tapping a selected name cycles ×1 → ×2 → off so an item can split unevenly: `A×2 + B×1` gives A two thirds of that item.
-- Missing prices or names are an empty state, not an error; only an invalid total (non-empty, unparseable, or `<= 0`) errors.
+- Missing prices or names are an empty state, not an error; only an invalid total (non-empty, unparseable, or `<= 0`) errors, shown directly under the Total paid field.
 - The Result table has `No`, `Price`, `W. fee (X%)`, then one column per person; its footer starts with `Total` and shows the subtotal, the total with fee, and each person's total. `No`, `Bill`, `From`, and `To` are left-aligned; `Price` and the amounts are right-aligned.
 - The fee is `(paid total - item subtotal) / item subtotal` and is distributed proportionally across items and people. An empty total means no fee. `calculateBill()` owns this pure calculation; it accepts `{ total, items, people, shares, roundWhole }` and returns `{ bill, error }`. All money is calculated in integer minor units with largest-remainder allocation, so person totals and item shares sum exactly to their totals.
 - The `Round numbers` switch (`roundWhole`) toggles between whole numbers and two decimal places.
