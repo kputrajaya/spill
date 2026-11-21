@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 import os
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlsplit
@@ -208,6 +209,7 @@ class handler(BaseHTTPRequestHandler):
             try:
                 receipt = json.loads(content)
             except json.JSONDecodeError:
+                logging.warning('Receipt response was not valid JSON')
                 self.send_error(500, 'Failed to parse receipt')
                 return
 
@@ -216,4 +218,5 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(receipt).encode())
         except Exception:
+            logging.exception('Failed to process receipt')
             self.send_error(500, 'Failed to process image')

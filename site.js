@@ -19,6 +19,8 @@
   // Money is stored in integer minor units; 2 decimals means cents.
   const MINOR_DECIMALS = 2;
   const MINOR_UNIT = 10 ** MINOR_DECIMALS;
+  const TOAST_DURATION_MS = 2500;
+  const URL_SYNC_DELAY_MS = 250;
 
   /* ------------------------------------------------------------------ */
   /* Money                                                              */
@@ -378,6 +380,29 @@
     window.history.replaceState(null, null, search ? `?${search}` : window.location.pathname);
   };
 
+  let urlSyncTimer = null;
+  let pendingUrlParams = null;
+
+  const queueUrlState = (params) => {
+    pendingUrlParams = params;
+    if (urlSyncTimer) clearTimeout(urlSyncTimer);
+    urlSyncTimer = setTimeout(() => {
+      urlSyncTimer = null;
+      const next = pendingUrlParams;
+      pendingUrlParams = null;
+      if (next) writeUrlState(next);
+    }, URL_SYNC_DELAY_MS);
+  };
+
+  const flushUrlState = () => {
+    if (!urlSyncTimer) return;
+    clearTimeout(urlSyncTimer);
+    urlSyncTimer = null;
+    const next = pendingUrlParams;
+    pendingUrlParams = null;
+    if (next) writeUrlState(next);
+  };
+
   // "NAME" / "NAME+weight" tokens, comma-separated, items separated by "|"
   const parseShares = (raw) =>
     raw.split('|').map((line) => {
@@ -423,7 +448,30 @@
   /* DOM helpers                                                        */
   /* ------------------------------------------------------------------ */
 
+  const showToast = (message, type = 'success') => {
+    const stack = document.getElementById('toastStack');
+    if (!stack) return;
+
+    const item = document.createElement('div');
+    item.className = `toast toast-${type}`;
+    item.textContent = message;
+    stack.appendChild(item);
+    setTimeout(() => item.remove(), TOAST_DURATION_MS);
+  };
+
+  const toast = {
+    success: (message) => showToast(message, 'success'),
+    error: (message) => showToast(message, 'error'),
+  };
+
   const copyToClipboard = async (text) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+    }
+
     const field = document.createElement('textarea');
     field.style.opacity = 0;
     document.body.appendChild(field);
@@ -432,15 +480,7 @@
     field.select();
     const copied = document.execCommand && document.execCommand('copy');
     field.remove();
-    if (copied === true) return true;
-
-    if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {}
-    }
-    return false;
+    return copied === true;
   };
 
   const shrinkImage = (image) => {
@@ -486,11 +526,6 @@
   /* ------------------------------------------------------------------ */
 
   document.addEventListener('alpine:init', () => {
-    const toast = new Notyf({
-      ripple: false,
-      position: { x: 'center' },
-    });
-
     Alpine.data('spill', function () {
       return {
         // Source state
@@ -575,6 +610,7 @@
             this.recalculate();
             this.recalculateStack();
           });
+          window.addEventListener('pagehide', flushUrlState);
         },
 
         restoreFromUrl() {
@@ -611,7 +647,7 @@
           // Keep shares aligned with the parsed items, dropping names that were removed
           this.shares = items.map((_, index) => pruneShares(this.shares[index], people));
 
-          this.syncUrlState();
+          this.scheduleUrlSync();
           this.autoSizeLists();
 
           const result = calculateBill({
@@ -625,14 +661,14 @@
           this.bill = result.bill;
         },
 
-        syncUrlState() {
+        scheduleUrlSync() {
           const params = { t: String(this.totalPaid).trim(), i: this.itemText };
           if (this.people.length) params.p = this.people.join('|');
 
           const shareText = this.shares.map(encodeShares).join('|');
           if (shareText.replace(/\|/g, '')) params.a = shareText;
 
-          writeUrlState(params);
+          queueUrlState(params);
         },
 
         /* -------------------------- Assignment ------------------------ */
@@ -728,6 +764,7 @@
             return;
           }
 
+          flushUrlState();
           const copied = await copyToClipboard(location.href);
           copied ? toast.success('Shareable link copied!') : toast.error('Cannot access clipboard!');
         },

@@ -32,7 +32,7 @@ The deployed site is hosted on Vercel. `vercel.json` configures `api/upload.py` 
 - `api/upload.py` — Vercel Python function that resizes/grayscales an uploaded receipt, sends it to a vision model with a 30-second timeout, and returns extracted JSON. Requires `HOST`; requests fail closed when it is missing and only same-origin browsers are accepted.
 - `requirements.txt` — pinned Python dependencies for receipt scanning
 
-The frontend loads Alpine.js, Alpine Persist, Bootstrap CSS, and Notyf from CDN URLs in `index.html`.
+The frontend loads Alpine.js, Alpine Persist, and Bootstrap CSS from CDN URLs in `index.html`. Toasts are native app markup/CSS.
 
 ## Organization
 
@@ -49,11 +49,11 @@ State model:
 - Cached computed: `bill`, `stackTotals` because calculation and settlement are more expensive than simple derivation.
 - Persisted: `spill:bills` and `spill:roundWhole` only. `stackPeople` is derived, not persisted.
 
-Component methods to keep consistent when editing: `recalculate()`, `recalculateStack()`, `syncUrlState()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `saveBill()`, `deleteBill()`, `clearBills()`, `copyBillSummary()`, `copyShareLink()`, `copySettlement()`, `roundAmount()`, `formatAmount()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
+Component methods to keep consistent when editing: `recalculate()`, `recalculateStack()`, `scheduleUrlSync()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `saveBill()`, `deleteBill()`, `clearBills()`, `copyBillSummary()`, `copyShareLink()`, `copySettlement()`, `roundAmount()`, `formatAmount()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
 
 ## Architecture Decisions
 
-- Keep the zero-build architecture. Bootstrap CSS is used for form/layout primitives; Bootstrap JS, Pica, and the browser test runner were removed. Stack bills uses native `<details>`.
+- Keep the zero-build architecture. Bootstrap CSS is used for form/layout primitives; Bootstrap JS, Pica, Notyf, and the browser test runner were removed. Stack bills uses native `<details>` and toasts use a native `role="status"` stack.
 - Keep a pure core plus a stateful Alpine shell. `site.js` exports the `spill` namespace and returns before DOM setup when `document` is unavailable, so Node tests use the production functions.
 - Calculate money in integer minor units (`MINOR_DECIMALS = 2`, `MINOR_UNIT = 100`). Use largest-remainder allocation so item shares and person totals sum exactly to their targets. Do not introduce major-unit float calculations.
 - Accept display-level rounding differences: independently rounded item-price cells may not sum to the displayed subtotal, and rounded totals may not exactly reconstruct `feePercent`. Per-portion allocation and settlement must stay exact.
@@ -62,9 +62,9 @@ Component methods to keep consistent when editing: `recalculate()`, `recalculate
 - Item prices use one item per line and the first standalone amount per line. Spaces split tokens, so `6 000` reads as `6`; semicolons and space thousands separators are not supported.
 - Assignment weights cap at ×2; `All` clears an item’s assignments and shares it equally. Missing assignments mean everyone shares.
 - Receipt OCR preserves printed separators; the browser `parseNumber()` normalizes them. The API does not duplicate that logic.
-- API requests fail closed without `HOST`; only same-origin `Origin`/`Referer` requests pass. This is CSRF protection, not authentication. Use Vercel WAF rate limiting (dashboard, not repo code) for abuse protection. OpenAI calls have a 30-second timeout and capped completion tokens.
+- API requests fail closed without `HOST`; only same-origin `Origin`/`Referer` requests pass. This is CSRF protection, not authentication. Use Vercel WAF rate limiting (dashboard, not repo code) for abuse protection. OpenAI calls have a 30-second timeout and capped completion tokens; server failures are logged.
 - Older saved bills using legacy field names are not migrated, and old link formats are not read.
-- Tests cover pure parsing, splitting, rounding, share links, and settlement. Browser/Alpine behavior still requires manual verification; CI is not configured yet.
+- Tests cover pure parsing, splitting, rounding, share links, and settlement. GitHub Actions runs `node tests/site.test.js` on push and pull requests; browser/Alpine behavior still requires manual verification.
 
 ## Core Behavior
 

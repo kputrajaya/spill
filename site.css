@@ -128,6 +128,35 @@ body {
   padding: 0.45rem 0.6rem;
 }
 
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.18);
+}
+
+.toast-error {
+  background: var(--warn-ink);
+}
+
 /* ------------------------------------------------------------------ */
 /* Fields                                                              */
 /* ------------------------------------------------------------------ */
