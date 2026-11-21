@@ -117,7 +117,10 @@
             autocomplete="off"
             placeholder="55000"
             x-model="totalPaid"
+            :aria-invalid="!!error"
+            :aria-describedby="error ? 'totalError' : null"
           />
+          <p id="totalError" class="help help-warn mt-2 mb-0" x-show="error" x-text="error" role="alert"></p>
         </div>
       </section>
 
@@ -131,11 +134,8 @@
           </div>
         </div>
 
-        <template x-if="error">
-          <p class="help help-warn mb-0" x-text="error" role="alert"></p>
-        </template>
-        <template x-if="!error && !bill">
-          <p class="help mb-0">Add prices and initials to view result</p>
+        <template x-if="!bill">
+          <p class="help mb-0">Fill in the inputs correctly to view the result</p>
         </template>
 
         <template x-if="bill">
