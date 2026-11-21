@@ -114,7 +114,7 @@ test('parseItems skips broken amounts and blank lines', () => {
   assert.deepEqual(blank.lineIndexes, [0, null, 1]);
 });
 
-test('parseNames normalizes, deduplicates, and sorts initials', () => {
+test('parseNames normalizes, deduplicates, and sorts names', () => {
   assert.deepEqual(parseNames(' ani budi ANI 123 '), ['ANI', 'BUDI']);
   assert.equal(sanitizeName('a-b c'), 'ABC');
 });
