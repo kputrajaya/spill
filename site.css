@@ -142,7 +142,8 @@ body {
   pointer-events: none;
 }
 
-.toast {
+.toast-item {
+  display: block;
   border-radius: 10px;
   background: var(--ink);
   color: #fff;
@@ -153,7 +154,7 @@ body {
   box-shadow: 0 6px 20px rgba(17, 17, 17, 0.18);
 }
 
-.toast-error {
+.toast-item-error {
   background: var(--warn-ink);
 }
 

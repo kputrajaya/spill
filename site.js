@@ -453,7 +453,7 @@
     if (!stack) return;
 
     const item = document.createElement('div');
-    item.className = `toast toast-${type}`;
+    item.className = `toast-item toast-item-${type}`;
     item.textContent = message;
     stack.appendChild(item);
     setTimeout(() => item.remove(), TOAST_DURATION_MS);
