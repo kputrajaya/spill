@@ -8,9 +8,19 @@
   --muted: #8a8a8a;
   --line: #e8e8e8;
   --line-strong: #d0d0d0;
+  --border: var(--line);
   --surface: #ffffff;
   --canvas: #f4f4f4;
   --radius: 16px;
+  --field-bg: #ffffff;
+  --field-focus: var(--ink);
+  --focus-ring: rgba(17, 17, 17, 0.07);
+  --quiet-bg: #efefef;
+  --quiet-bg-hover: #e2e2e2;
+  --row-hover: #fafafa;
+  --tag-bg: var(--ink);
+  --x-hover-bg: var(--ink);
+  --x-hover-ink: #ffffff;
   --warn-bg: #fdecea;
   --warn-ink: #a11912;
 
@@ -67,7 +77,7 @@ body {
 
 .surface {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.05rem 1.1rem;
   margin-bottom: 0.9rem;
@@ -126,7 +136,7 @@ body {
 .form-select {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background-color: #fff;
+  background-color: var(--field-bg);
   color: var(--ink);
   font-size: 0.88rem;
   font-variant-numeric: tabular-nums;
@@ -136,8 +146,8 @@ body {
 }
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.07);
+  border-color: var(--field-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 textarea.form-control {
@@ -186,23 +196,23 @@ textarea.form-control.list-input {
 }
 
 .btn-quiet {
-  background: #efefef;
+  background: var(--quiet-bg);
   border: 1px solid transparent;
   color: var(--ink);
 }
 .btn-quiet:hover,
 .btn-quiet:focus {
-  background: #e2e2e2;
+  background: var(--quiet-bg-hover);
   color: var(--ink);
 }
 
-.btn-yellow {
+.btn-accent {
   background: var(--stack-button);
   border: 1px solid transparent;
   color: var(--ink);
 }
-.btn-yellow:hover,
-.btn-yellow:focus {
+.btn-accent:hover,
+.btn-accent:focus {
   background: var(--stack-button-hover);
   color: var(--ink);
 }
@@ -213,14 +223,14 @@ textarea.form-control.list-input {
   padding: 0;
   border: 1px solid transparent;
   border-radius: 999px;
-  background: #efefef;
+  background: var(--quiet-bg);
   color: var(--ink-soft);
   font-size: 0.85rem;
   line-height: 1;
 }
 .btn-x:hover {
-  background: var(--ink);
-  color: #fff;
+  background: var(--x-hover-bg);
+  color: var(--x-hover-ink);
 }
 
 /* ------------------------------------------------------------------ */
@@ -288,7 +298,7 @@ textarea.form-control.list-input {
   grid-row: 2;
   min-width: 0;
 }
-.item-pills {
+.item-chips-list {
   display: flex;
   flex-direction: column;
   /* Match the textarea's border + padding so the first rows line up */
@@ -341,7 +351,7 @@ textarea.form-control.list-input {
   color: var(--ink-soft);
 }
 .tbl tbody tr:hover td {
-  background: #fafafa;
+  background: var(--row-hover);
 }
 /* The rule above the totals row matches the header rule */
 .tbl tbody tr:last-child td {
@@ -362,14 +372,8 @@ textarea.form-control.list-input {
   color: var(--muted);
 }
 
-.t-start {
-  text-align: left;
-}
 .tbl .t-start {
   text-align: left;
-}
-.t-center {
-  text-align: center;
 }
 .tbl .t-center {
   text-align: center;
@@ -387,7 +391,7 @@ textarea.form-control.list-input {
   display: inline-block;
   padding: 0.02rem 0.38rem;
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--tag-bg);
   color: #fff;
   font-size: 0.55rem;
   font-weight: 700;
@@ -399,123 +403,84 @@ textarea.form-control.list-input {
 /* Stack bills (mild yellow accent)                                    */
 /* ------------------------------------------------------------------ */
 
-.stack-item,
-.accordion-flush .accordion-item.surface.stack-item {
-  background: var(--stack-bg);
-  border-color: var(--stack-border);
-  color: var(--ink);
+.stack-item {
+  --surface: var(--stack-bg);
+  --border: var(--stack-border);
+  --line: var(--stack-line);
+  --line-strong: var(--stack-line-strong);
+  --field-bg: var(--stack-input);
+  --field-focus: #b45309;
+  --focus-ring: rgba(180, 83, 9, 0.13);
+  --quiet-bg: var(--stack-button);
+  --quiet-bg-hover: var(--stack-button-hover);
+  --row-hover: rgba(17, 17, 17, 0.03);
+  --tag-bg: var(--stack-accent);
+  --x-hover-bg: var(--stack-button-hover);
+  --x-hover-ink: var(--ink);
 }
-.stack-item .accordion-button:hover {
+
+.surface.stack-details {
+  padding: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.stack-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.95rem 1.05rem;
+  cursor: pointer;
+  list-style: none;
+}
+.stack-details > summary::-webkit-details-marker {
+  display: none;
+}
+.stack-details > summary:hover {
   background: rgba(17, 17, 17, 0.02);
 }
-.stack-item .accordion-button,
-.stack-item .accordion-button .section-title {
+.stack-details > summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.stack-details > summary::after {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.15s ease;
+}
+.stack-details[open] > summary::after {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+.stack-details .section-title {
   color: var(--ink);
 }
-.stack-item .accordion-body > .row {
+
+.stack-body {
+  padding: 0 1.05rem 1.15rem;
+}
+.stack-body > .row {
   margin-top: 0.6rem;
 }
-.stack-item .accordion-body .section-head {
+.stack-body .section-head {
   margin-top: 1.75rem;
 }
-.stack-item .field-label {
+.stack-details .field-label {
   margin-bottom: 0.45rem;
 }
 
-.stack-item .form-control,
-.stack-item .form-select {
-  border-color: var(--stack-line);
-  background: var(--stack-input);
-}
-.stack-item .form-control:focus,
-.stack-item .form-select:focus {
-  border-color: #b45309;
-  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.13);
-}
-
-.stack-item .btn-quiet {
-  background: var(--stack-button);
-  color: var(--ink);
-}
-.stack-item .btn-quiet:hover,
-.stack-item .btn-quiet:focus {
-  background: var(--stack-button-hover);
-  color: var(--ink);
-}
-.stack-item .btn-x {
-  background: var(--stack-button);
-  color: var(--ink);
-}
-.stack-item .btn-x:hover {
-  background: var(--stack-button-hover);
-  color: var(--ink);
-}
-
-.stack-item .tbl th,
-.stack-item .tbl td {
-  border-bottom-color: var(--stack-line);
-}
-.stack-item .tbl thead th {
-  border-bottom-color: var(--stack-line-strong);
-}
-.stack-item .tbl tbody tr:hover td {
-  background: rgba(17, 17, 17, 0.03);
-}
-/* The line above the summary rows matches the header rule; inner rows stay thin */
-.stack-item .tbl tbody tr:last-child td {
-  border-bottom-color: var(--stack-line-strong);
-}
+/* Thin footer rules, with a stronger line above and below the summary block */
 .stack-item .tbl tfoot th {
-  border-top: 1px solid var(--stack-line);
-  border-bottom: 0;
+  border-top: 1px solid var(--line);
 }
 .stack-item .tbl tfoot tr:first-child th {
-  border-top: 1px solid var(--stack-line-strong);
+  border-top: 1px solid var(--line-strong);
 }
 .stack-item .tbl tfoot tr:last-child th {
-  border-top-color: var(--stack-line-strong);
-}
-
-.stack-item .tag {
-  background: var(--stack-accent);
-}
-
-/* ------------------------------------------------------------------ */
-/* Accordion                                                           */
-/* ------------------------------------------------------------------ */
-
-.accordion-flush .accordion-item {
-  border: 0;
-  background: transparent;
-}
-.accordion-flush .accordion-item.surface {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 0;
-  overflow: hidden;
-}
-.accordion-button {
-  background: transparent;
-  padding: 0.95rem 1.05rem;
-  border-radius: var(--radius);
-  box-shadow: none;
-}
-.accordion-button:not(.collapsed) {
-  background: transparent;
-  color: var(--ink);
-  box-shadow: none;
-}
-.accordion-button:focus {
-  border-color: transparent;
-  box-shadow: none;
-}
-.accordion-button::after {
-  filter: grayscale(1);
-  opacity: 0.7;
-}
-.accordion-body {
-  padding: 0 1.05rem 1.15rem;
+  border-top-color: var(--line-strong);
 }
 
 /* ------------------------------------------------------------------ */

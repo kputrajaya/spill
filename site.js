@@ -16,11 +16,12 @@
     roundWhole: 'spill:roundWhole',
   };
 
-  const AMOUNT_TOKEN = /^\d[\d.,]*$/;
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // Money is stored in integer minor units; 2 decimals means cents.
+  const MINOR_DECIMALS = 2;
+  const MINOR_UNIT = 10 ** MINOR_DECIMALS;
 
   /* ------------------------------------------------------------------ */
-  /* Numbers                                                           */
+  /* Money                                                              */
   /* ------------------------------------------------------------------ */
 
   // Accepts "Rp 73.150", "30,000", "30 000", "1.234.567,89", 27500
@@ -62,9 +63,57 @@
     return Math.min(CONFIG.maxShare, Math.max(1, weight));
   };
 
+  // All money is calculated in integer minor units (cents) and only converted
+  // back to major units for display.
+  const toMinor = (value) => {
+    const number = parseNumber(value);
+    return Number.isFinite(number) ? Math.round((number + Number.EPSILON) * MINOR_UNIT) : NaN;
+  };
+
+  const fromMinor = (cents) => cents / MINOR_UNIT;
+
+  const roundToUnit = (cents, unit) => Math.round(cents / unit) * unit;
+
+  // Largest-remainder split of `totalUnits` according to integer weights.
+  const distributeUnits = (totalUnits, weights, offset = 0) => {
+    const count = weights.length;
+    if (!count) return [];
+
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    if (!totalWeight) return weights.map(() => 0);
+
+    const units = weights.map((weight) => Math.floor((totalUnits * weight) / totalWeight));
+    const remainder = totalUnits - units.reduce((sum, value) => sum + value, 0);
+    if (remainder <= 0) return units;
+
+    const order = weights
+      .map((weight, index) => ({
+        index,
+        remainder: (totalUnits * weight) % totalWeight,
+      }))
+      .sort(
+        (a, b) =>
+          b.remainder - a.remainder ||
+          ((a.index - offset + count) % count) - ((b.index - offset + count) % count)
+      );
+
+    for (let i = 0; i < remainder; i++) {
+      units[order[i % count].index] += 1;
+    }
+    return units;
+  };
+
+  const roundAmount = (value, roundWhole = true) => {
+    const cents = toMinor(value);
+    if (!Number.isFinite(cents)) return 0;
+    return fromMinor(roundToUnit(cents, roundWhole ? MINOR_UNIT : 1));
+  };
+
   /* ------------------------------------------------------------------ */
   /* Text                                                              */
   /* ------------------------------------------------------------------ */
+
+  const AMOUNT_TOKEN = /^\d[\d.,]*$/;
 
   // Names are letters only; anything else is dropped
   const sanitizeName = (value) =>
@@ -83,172 +132,280 @@
     return [...names].sort();
   };
 
-  // One entry per line: "30000", "Nasi Goreng 30.000" or "30.000 - Nasi Goreng".
-  // `lines` keeps one slot per visual line (item indexes, or empty when skipped)
-  // so the chip rows can stay aligned with the textarea.
+  // One entry per line; the first standalone amount is used.
+  // `lineIndexes` keeps one slot per visual line (an item index, or null when
+  // skipped) so the chip rows can stay aligned with the textarea.
   const parseItems = (raw) => {
-    let text = String(raw || '').replace(/\r/g, '');
-    for (let i = 0; i < 3; i++) {
-      text = text.replace(/(\d)[\u00A0 ](?=\d{3}(?!\d))/g, '$1');
-    }
-
+    const text = String(raw || '').replace(/\r/g, '');
     const items = [];
-    const lines = [];
-    let skipped = 0;
 
-    const addItem = (token) => {
-      const price = parseNumber(token);
-      if (!(price > 0)) {
-        skipped++;
-        return null;
-      }
+    const lineIndexes = text.split('\n').map((line) => {
+      // Left to right, first standalone amount wins; later numbers
+      // (quantities, package sizes, stray totals) are ignored. A token with
+      // broken punctuation such as "6x0j00" never matches, so it is skipped.
+      const amountToken = line.split(/\s+/).find((token) => AMOUNT_TOKEN.test(token));
+      const price = amountToken ? parseNumber(amountToken) : NaN;
+      if (!(price > 0)) return null;
+
       items.push({ price });
       return items.length - 1;
-    };
-
-    const hasContent = text.trim().length > 0;
-    text.split('\n').forEach((line) => {
-      const lineItems = [];
-      const skippedBefore = skipped;
-      const add = (token) => {
-        const index = addItem(token);
-        if (index !== null) lineItems.push(index);
-      };
-
-      line.split(';').forEach((chunk) => {
-        // Split only on commas that separate entries, never inside "30,000"
-        const segments = chunk.split(/(?<=\D)\s*,\s*|\s*,\s*(?=\D)/);
-        for (let i = 0; i < segments.length; i++) {
-          const segment = segments[i].trim();
-          if (!segment) continue;
-
-          // Glue a fragment without an amount onto the following segment
-          if (!/\d/.test(segment) && i + 1 < segments.length) {
-            segments[i + 1] = `${segment} ${segments[i + 1]}`;
-            continue;
-          }
-
-          // No letters: a bare list of amounts ("30000 27500 9000")
-          if (!/[A-Za-z]/.test(segment)) {
-            const amounts = segment.split(/[\s,]+/).filter((token) => /\d/.test(token));
-            if (!amounts.length) {
-              skipped++;
-              continue;
-            }
-            amounts.forEach(add);
-            continue;
-          }
-
-          // A label plus one amount
-          const tokens = segment.split(/\s+/);
-          let amountIndex = -1;
-          for (let t = tokens.length - 1; t >= 0; t--) {
-            if (AMOUNT_TOKEN.test(tokens[t])) {
-              amountIndex = t;
-              break;
-            }
-          }
-          if (amountIndex === -1) {
-            skipped++;
-            continue;
-          }
-          add(tokens[amountIndex]);
-        }
-      });
-
-      // Blank lines count as skipped too, but an empty field is not a skip
-      if (hasContent && !lineItems.length && skipped === skippedBefore) skipped++;
-
-      lines.push(lineItems);
     });
 
-    return { items, skipped, lines };
+    const skipped = text.trim() ? lineIndexes.filter((index) => index === null).length : 0;
+    return { items, skipped, lineIndexes };
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Bill calculation                                                   */
+  /* ------------------------------------------------------------------ */
+
+  // Pure split calculation. `items` are prices, `shares` is one object per
+  // item mapping name to weight (empty means everyone shares evenly), and
+  // `total` may be empty for no fee.
+  const calculateBill = ({ total = null, items = [], people = [], shares = [], roundWhole = true } = {}) => {
+    const totalText = total == null ? '' : String(total).trim();
+    if (!totalText && !items.length) return { bill: null, error: null };
+
+    const totalCents = totalText ? toMinor(totalText) : null;
+    if (totalCents !== null && !(totalCents > 0)) {
+      return { bill: null, error: 'Enter a valid total.' };
+    }
+    if (!items.length) return { bill: null, error: null };
+
+    const priceCents = items.map(toMinor);
+    if (priceCents.some((cents) => !(cents > 0))) return { bill: null, error: null };
+
+    const everyone = people.length
+      ? people
+      : [...new Set(shares.flatMap((row) => Object.keys(row || {})))];
+    if (!everyone.length) return { bill: null, error: null };
+
+    const subtotalCents = priceCents.reduce((sum, cents) => sum + cents, 0);
+    const fee = totalCents === null ? 0 : (totalCents - subtotalCents) / subtotalCents;
+    const unit = roundWhole ? MINOR_UNIT : 1;
+    const targetTotalCents = roundToUnit(totalCents === null ? subtotalCents : totalCents, unit);
+    const itemTargetCents = distributeUnits(targetTotalCents / unit, priceCents).map(
+      (units) => units * unit
+    );
+    const totalsCents = {};
+
+    const rows = priceCents.map((price, index) => {
+      const selected = shares[index] || {};
+      const names = Object.keys(selected);
+      const split = names.length ? selected : Object.fromEntries(everyone.map((name) => [name, 1]));
+      const entries = Object.entries(split).map(([person, weight]) => [
+        person,
+        Math.max(1, Math.round(Number(weight) || 1)),
+      ]);
+      const allocations = distributeUnits(
+        itemTargetCents[index] / unit,
+        entries.map(([, weight]) => weight),
+        index
+      );
+
+      const row = {
+        index,
+        price: fromMinor(roundToUnit(price, unit)),
+        priceWithFee: fromMinor(itemTargetCents[index]),
+        shares: {},
+      };
+
+      entries.forEach(([person], item) => {
+        const cents = allocations[item] * unit;
+        row.shares[person] = fromMinor(cents);
+        totalsCents[person] = (totalsCents[person] || 0) + cents;
+      });
+
+      return row;
+    });
+
+    const totals = Object.fromEntries(
+      Object.entries(totalsCents).map(([person, cents]) => [person, fromMinor(cents)])
+    );
+
+    return {
+      bill: {
+        people: Object.keys(totalsCents).sort(),
+        feePercent: Math.round(fee * 1000) / 10,
+        items: rows,
+        subtotal: fromMinor(roundToUnit(subtotalCents, unit)),
+        total: fromMinor(targetTotalCents),
+        totals,
+      },
+      error: null,
+    };
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Share helpers                                                      */
+  /* ------------------------------------------------------------------ */
+
+  const pruneShares = (shares, people) => {
+    const pruned = {};
+    Object.entries(shares || {}).forEach(([name, weight]) => {
+      if (people.includes(name)) pruned[name] = weight;
+    });
+    return pruned;
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Settlement                                                         */
+  /* ------------------------------------------------------------------ */
+
+  // Exact grouping is O(3^n); 15 remaining nonzero balances is the practical
+  // ceiling after exact opposites are removed.
+  const EXACT_LIMIT = 15;
+
+  const toEntries = (balances) =>
+    balances
+      .map((balance, index) => ({ index, cents: Math.round(balance * MINOR_UNIT) }))
+      .filter((entry) => entry.cents !== 0);
+
+  // Largest-first greedy within one zero-sum group
+  const settleGroup = (entries) => {
+    const creditors = [];
+    const debtors = [];
+    entries.forEach((entry) => {
+      if (entry.cents < 0) debtors.push({ index: entry.index, cents: -entry.cents });
+      else creditors.push({ index: entry.index, cents: entry.cents });
+    });
+    creditors.sort((a, b) => b.cents - a.cents);
+    debtors.sort((a, b) => b.cents - a.cents);
+
+    const transfers = [];
+    while (creditors.length && debtors.length) {
+      const creditor = creditors[0];
+      const debtor = debtors[0];
+      const cents = Math.min(creditor.cents, debtor.cents);
+      transfers.push({ from: debtor.index, to: creditor.index, amount: cents / MINOR_UNIT });
+
+      creditor.cents -= cents;
+      debtor.cents -= cents;
+      if (!creditor.cents) creditors.shift();
+      if (!debtor.cents) debtors.shift();
+      creditors.sort((a, b) => b.cents - a.cents);
+      debtors.sort((a, b) => b.cents - a.cents);
+    }
+    return transfers;
+  };
+
+  const settleGreedy = (balances) => settleGroup(toEntries(balances));
+
+  // Split balances into as many zero-sum groups as possible, then settle each
+  // group greedily. Fewer groups means more transfers; maximizing groups gives
+  // the minimum possible transaction count.
+  const settleBalances = (balances) => {
+    const entries = toEntries(balances);
+    const transfers = [];
+
+    // Exact opposites can always settle each other directly; removing them
+    // reduces the search size without affecting the minimum transfer count.
+    for (let i = 0; i < entries.length; i++) {
+      if (!entries[i].cents) continue;
+      for (let j = i + 1; j < entries.length; j++) {
+        if (entries[j].cents !== -entries[i].cents) continue;
+
+        const positive = entries[i].cents > 0 ? entries[i] : entries[j];
+        const negative = entries[i].cents > 0 ? entries[j] : entries[i];
+        transfers.push({
+          from: negative.index,
+          to: positive.index,
+          amount: positive.cents / MINOR_UNIT,
+        });
+        entries[i].cents = 0;
+        entries[j].cents = 0;
+        break;
+      }
+    }
+
+    const active = entries.filter((entry) => entry.cents !== 0);
+    if (active.length < 2) return transfers;
+    if (active.length > EXACT_LIMIT) {
+      transfers.push(...settleGroup(active));
+      return transfers;
+    }
+
+    const size = 1 << active.length;
+    const sums = new Array(size).fill(0);
+    for (let mask = 1; mask < size; mask++) {
+      const bit = mask & -mask;
+      const index = 31 - Math.clz32(bit);
+      sums[mask] = sums[mask ^ bit] + active[index].cents;
+    }
+    if (sums[size - 1] !== 0) return [...transfers, ...settleGroup(active)];
+
+    const groups = new Array(size).fill(-1);
+    const choice = new Array(size).fill(0);
+    groups[0] = 0;
+
+    for (let mask = 1; mask < size; mask++) {
+      if (sums[mask] !== 0) continue;
+
+      const first = mask & -mask;
+      for (let sub = (mask - 1) & mask; sub; sub = (sub - 1) & mask) {
+        if (!(sub & first) || sums[sub] !== 0) continue;
+        const value = groups[mask ^ sub] + 1;
+        if (value > groups[mask]) {
+          groups[mask] = value;
+          choice[mask] = sub;
+        }
+      }
+      if (groups[mask] < 0) groups[mask] = 1;
+    }
+
+    for (let mask = size - 1; mask; ) {
+      const groupMask = choice[mask] || mask;
+      const group = [];
+      for (let i = 0; i < active.length; i++) {
+        if (groupMask & (1 << i)) group.push(active[i]);
+      }
+      transfers.push(...settleGroup(group));
+      mask ^= groupMask;
+    }
+    return transfers;
   };
 
   /* ------------------------------------------------------------------ */
   /* URL state                                                         */
   /* ------------------------------------------------------------------ */
 
-  const decodeParam = (value) => {
-    try {
-      return decodeURIComponent(value);
-    } catch {
-      return value;
-    }
-  };
-
-  // Decodes the values written with the legacy "+" / "|" convention
-  const decodeLegacyValue = (value) => decodeParam(value).replace(/\+/g, ' ').replace(/\|/g, '\n');
-
-  const readUrlState = () => {
-    const state = {};
-    const search = window.location.search.slice(1);
-    if (!search) return state;
-
-    search.split('&').forEach((pair) => {
-      const at = pair.indexOf('=');
-      if (at === -1) return;
-      state[pair.slice(0, at)] = pair.slice(at + 1);
-    });
-    return state;
-  };
+  const readUrlState = () => Object.fromEntries(new URLSearchParams(window.location.search));
 
   const writeUrlState = (params) => {
-    const search = Object.entries(params)
-      .filter(([, value]) => value != null && value !== '')
-      .map(([key, value]) => {
-        // `p` and `a` are pre-encoded so "|", "," and "+" stay readable separators
-        if (key === 'p' || key === 'a') return `${key}=${value}`;
-        return `${key}=${encodeURIComponent(value).replace(/%20/g, '+').replace(/%0A/g, '|')}`;
-      })
-      .join('&');
-
+    const search = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value != null && value !== '')
+    ).toString();
     window.history.replaceState(null, null, search ? `?${search}` : window.location.pathname);
   };
 
   // "NAME" / "NAME+weight" tokens, comma-separated, items separated by "|"
   const parseShares = (raw) =>
-    decodeParam(raw)
-      .split('|')
-      .map((line) => {
-        const shares = {};
-        line.split(',').forEach((token) => {
-          const trimmed = token.trim();
-          if (!trimmed) return;
-
-          const separator = Math.max(trimmed.lastIndexOf('+'), trimmed.lastIndexOf(':'));
-          const name = sanitizeName(separator > 0 ? trimmed.slice(0, separator) : trimmed);
-          if (!name) return;
-
-          const weight = separator > 0 ? trimmed.slice(separator + 1) : '';
-          shares[name] = clampShare(weight);
-        });
-        return shares;
-      });
-
-  // Legacy links listed a name per share, so duplicates carry the weight
-  const parseLegacyShares = (text) =>
-    text.split('\n').map((line) => {
+    raw.split('|').map((line) => {
       const shares = {};
-      line
-        .trim()
-        .split(/\s+/)
-        .map(sanitizeName)
-        .filter(Boolean)
-        .forEach((name) => {
-          shares[name] = (shares[name] || 0) + 1;
-        });
+      line.split(',').forEach((token) => {
+        const trimmed = token.trim();
+        if (!trimmed) return;
+
+        const separator = Math.max(trimmed.lastIndexOf('+'), trimmed.lastIndexOf(':'));
+        const name = sanitizeName(separator > 0 ? trimmed.slice(0, separator) : trimmed);
+        if (!name) return;
+
+        const weight = separator > 0 ? trimmed.slice(separator + 1) : '';
+        shares[name] = clampShare(weight);
+      });
       return shares;
     });
 
   const encodeShares = (shares) =>
     Object.entries(shares)
-      .map(([name, weight]) => `${encodeURIComponent(name)}${weight > 1 ? `+${weight}` : ''}`)
+      .map(([name, weight]) => `${name}${weight > 1 ? `+${weight}` : ''}`)
       .join(',');
 
   /* ------------------------------------------------------------------ */
-  /* Formatting & settlement                                           */
+  /* Formatting                                                        */
   /* ------------------------------------------------------------------ */
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const formatTimestamp = (date) => {
     const hours = String(date.getHours()).padStart(2, '0');
@@ -256,47 +413,14 @@
     return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${hours}:${minutes}`;
   };
 
-  const settleBalances = (balances) => {
-    const creditors = [];
-    const debtors = [];
-    balances.forEach((balance, index) => {
-      // Positive is credit, negative is debt
-      if (balance < 0) debtors.push({ index, amount: -balance });
-      else if (balance > 0) creditors.push({ index, amount: balance });
-    });
-    creditors.sort((a, b) => b.amount - a.amount);
-    debtors.sort((a, b) => b.amount - a.amount);
-
-    const transfers = [];
-    while (creditors.length && debtors.length) {
-      const creditor = creditors[0];
-      const debtor = debtors[0];
-      const transfer = {
-        from: debtor.index,
-        to: creditor.index,
-        amount: Math.min(creditor.amount, debtor.amount),
-      };
-      transfers.push(transfer);
-
-      if (creditor.amount === transfer.amount) {
-        creditors.shift();
-      } else {
-        creditor.amount -= transfer.amount;
-        creditors.sort((a, b) => b.amount - a.amount);
-      }
-      if (debtor.amount === transfer.amount) {
-        debtors.shift();
-      } else {
-        debtor.amount -= transfer.amount;
-        debtors.sort((a, b) => b.amount - a.amount);
-      }
-    }
-
-    return transfers;
+  const formatAmount = (value, roundWhole = true, decimals = null) => {
+    if (value == null || Number.isNaN(Number(value))) return '';
+    const digits = decimals ?? (roundWhole ? 0 : MINOR_DECIMALS);
+    return Number(value).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   /* ------------------------------------------------------------------ */
-  /* Clipboard                                                         */
+  /* DOM helpers                                                        */
   /* ------------------------------------------------------------------ */
 
   const copyToClipboard = async (text) => {
@@ -319,6 +443,44 @@
     return false;
   };
 
+  const shrinkImage = (image) => {
+    const scale = Math.min(1, CONFIG.maxImagePx / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+
+    const context = canvas.getContext('2d');
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', CONFIG.jpegQuality));
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Exports                                                            */
+  /* ------------------------------------------------------------------ */
+
+  const spill = {
+    parseNumber,
+    parseItems,
+    parseNames,
+    sanitizeName,
+    clampShare,
+    toMinor,
+    fromMinor,
+    roundAmount,
+    formatAmount,
+    calculateBill,
+    parseShares,
+    encodeShares,
+    settleBalances,
+    settleGreedy,
+    EXACT_LIMIT,
+  };
+  if (typeof module === 'object' && module.exports) module.exports = spill;
+  if (typeof document === 'undefined') return;
+
   /* ------------------------------------------------------------------ */
   /* Component                                                         */
   /* ------------------------------------------------------------------ */
@@ -331,29 +493,76 @@
 
     Alpine.data('spill', function () {
       return {
-        // State
+        // Source state
         totalPaid: '',
         itemText: '',
         nameText: '',
-        people: [],
         shares: [],
-        items: [],
-        pillRows: [],
-        payerOptions: [],
-        warning: null,
         error: null,
         bill: null,
-        stack: this.$persist({ people: [], bills: [] }).as(STORAGE.bills),
+        stack: this.$persist({ bills: [] }).as(STORAGE.bills),
         stackTotals: null,
         stackPayer: '',
         stackNote: '',
         roundWhole: this.$persist(true).as(STORAGE.roundWhole),
 
+        // Derived state
+        get parsedItems() {
+          return parseItems(this.itemText);
+        },
+
+        get people() {
+          return parseNames(this.nameText);
+        },
+
+        get assignmentItems() {
+          return this.parsedItems.items.map((item, index) => ({
+            index,
+            key: `item-${index}`,
+            price: item.price,
+            shares: this.shares[index] || {},
+            shareCount: Object.keys(this.shares[index] || {}).length,
+          }));
+        },
+
+        get chipRows() {
+          return this.parsedItems.lineIndexes.map((index, lineIndex) =>
+            index === null
+              ? { key: `skip-${lineIndex}`, placeholder: true, index: -1, shares: {}, shareCount: 0 }
+              : this.assignmentItems[index]
+          );
+        },
+
+        get warning() {
+          const skipped = this.parsedItems.skipped;
+          return skipped ? `${skipped} line${skipped === 1 ? '' : 's'} skipped: no valid amount found.` : null;
+        },
+
+        // Anyone in the name list may have paid, even without a share
+        get payerOptions() {
+          return [...new Set([...this.people, ...Object.keys(this.bill?.totals || {})])].sort();
+        },
+
+        get stackPeople() {
+          const bills = this.stack.bills;
+          if (!bills.length) return [];
+          return [
+            ...new Set(
+              bills.flatMap((bill) => [
+                bill.payer,
+                ...Object.entries(bill.totals)
+                  .filter(([, amount]) => amount > 0)
+                  .map(([person]) => person),
+              ])
+            ),
+          ].sort();
+        },
+
         /* ---------------------------- Setup --------------------------- */
 
         init() {
           this.restoreFromUrl();
-          this.stack.bills = this.stack.bills.map(normalizeBill);
+          if (this.stack && 'people' in this.stack) delete this.stack.people;
 
           this.recalculate();
           this.recalculateStack();
@@ -370,29 +579,17 @@
 
         restoreFromUrl() {
           const state = readUrlState();
-          if (state.total != null) this.totalPaid = decodeLegacyValue(state.total);
-          if (state.items != null) this.itemText = decodeLegacyValue(state.items);
+          if (state.t != null) this.totalPaid = state.t;
+          if (state.i != null) this.itemText = state.i;
 
           let linkedPeople = [];
           if (state.p != null) {
-            linkedPeople = decodeParam(state.p)
-              .split(/[|,]/)
-              .map(sanitizeName)
-              .filter(Boolean);
+            linkedPeople = state.p.split(/[|,]/).map(sanitizeName).filter(Boolean);
           }
 
-          let linkedShares = null;
-          if (state.a != null) {
-            linkedShares = parseShares(state.a);
-          } else if (state.people != null) {
-            linkedShares = parseLegacyShares(decodeLegacyValue(state.people));
-            if (!linkedPeople.length) {
-              linkedPeople = [...new Set(linkedShares.flatMap((shares) => Object.keys(shares)))];
-            }
-          }
+          if (state.a != null) this.shares = parseShares(state.a);
 
           this.nameText = linkedPeople.length ? [...new Set(linkedPeople)].sort().join(' ') : '';
-          if (linkedShares) this.shares = linkedShares;
         },
 
         // The price field grows with its content instead of scrolling
@@ -408,113 +605,29 @@
         /* ---------------------------- Bill ---------------------------- */
 
         recalculate() {
-          const { items, skipped, lines } = parseItems(this.itemText);
-
-          this.people = parseNames(this.nameText);
-          this.payerOptions = [...this.people];
+          const { items } = this.parsedItems;
+          const people = this.people;
 
           // Keep shares aligned with the parsed items, dropping names that were removed
-          this.shares = items.map((_, index) => pruneShares(this.shares[index], this.people));
-          this.items = items.map((item, index) => ({
-            index,
-            key: `item-${index}`,
-            price: item.price,
-            shares: this.shares[index],
-            shareCount: Object.keys(this.shares[index]).length,
-          }));
-
-          // One chip row per visual line, with an empty row where a line was skipped
-          this.pillRows = lines.reduce((rows, lineItems, lineIndex) => {
-            if (!lineItems.length) {
-              rows.push({ key: `skip-${lineIndex}`, placeholder: true, index: -1, shares: {}, shareCount: 0 });
-            } else {
-              lineItems.forEach((index) => rows.push(this.items[index]));
-            }
-            return rows;
-          }, []);
+          this.shares = items.map((_, index) => pruneShares(this.shares[index], people));
 
           this.syncUrlState();
           this.autoSizeLists();
-          this.warning = skipped ? `${skipped} line${skipped === 1 ? '' : 's'} skipped: no amount found.` : null;
 
-          this.bill = this.buildBill(items);
-        },
-
-        buildBill(items) {
-          // Nothing entered yet
-          if (!String(this.totalPaid).trim() && !String(this.itemText).trim()) {
-            this.error = null;
-            return null;
-          }
-
-          // A blank total means no fee: the items already add up to what was paid
-          const totalText = String(this.totalPaid).trim();
-          const total = totalText ? parseNumber(totalText) : null;
-          if (total !== null && !(total > 0)) {
-            this.error = 'Enter a valid total.';
-            return null;
-          }
-          if (!items.length) {
-            this.error = null;
-            return null;
-          }
-
-          const everyone = this.people.length
-            ? this.people
-            : [...new Set(this.shares.flatMap((shares) => Object.keys(shares)))];
-          if (!everyone.length) {
-            this.error = null;
-            return null;
-          }
-
-          const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-          const fee = total === null ? 0 : (total - subtotal) / subtotal;
-          const totals = {};
-
-          const rows = items.map((item, index) => {
-            const shares = this.shares[index];
-            const names = Object.keys(shares);
-            // No names selected means everyone shares the item equally
-            const split = names.length ? shares : Object.fromEntries(everyone.map((name) => [name, 1]));
-            const totalWeight = Object.values(split).reduce((sum, weight) => sum + weight, 0);
-
-            const row = {
-              index,
-              price: this.roundAmount(item.price),
-              priceWithFee: this.roundAmount(item.price * (1 + fee)),
-              shares: {},
-            };
-
-            Object.entries(split).forEach(([person, weight]) => {
-              const amount = (item.price * weight * (1 + fee)) / totalWeight;
-              row.shares[person] = this.roundAmount((row.shares[person] || 0) + amount);
-              totals[person] = (totals[person] || 0) + amount;
-            });
-
-            return row;
+          const result = calculateBill({
+            total: this.totalPaid,
+            items: items.map((item) => item.price),
+            people,
+            shares: this.shares,
+            roundWhole: this.roundWhole,
           });
-
-          Object.keys(totals).forEach((person) => {
-            totals[person] = this.roundAmount(totals[person]);
-          });
-
-          this.error = null;
-          // Anyone in the name list may have paid, even without a share
-          this.payerOptions = [...new Set([...this.people, ...Object.keys(totals)])].sort();
-
-          return {
-            people: Object.keys(totals).sort(),
-            feePercent: Math.round(fee * 1000) / 10,
-            items: rows,
-            subtotal: this.roundAmount(subtotal),
-            total: this.roundAmount(subtotal * (1 + fee)),
-            totals,
-          };
+          this.error = result.error;
+          this.bill = result.bill;
         },
 
         syncUrlState() {
-          const params = { total: String(this.totalPaid).trim(), items: this.itemText };
-          if (this.people.length) params.p = this.people.map(encodeURIComponent).join('|');
+          const params = { t: String(this.totalPaid).trim(), i: this.itemText };
+          if (this.people.length) params.p = this.people.join('|');
 
           const shareText = this.shares.map(encodeShares).join('|');
           if (shareText.replace(/\|/g, '')) params.a = shareText;
@@ -549,54 +662,46 @@
 
         /* --------------------------- Receipt -------------------------- */
 
-        scanReceipt() {
-          const fileInput = document.createElement('input');
-          fileInput.type = 'file';
-          fileInput.accept = 'image/*,text/plain';
-          fileInput.style.display = 'none';
-          document.body.appendChild(fileInput);
+        scanReceipt(event) {
+          const input = event.target;
+          const file = input.files[0];
+          input.value = '';
+          if (!file) return;
 
-          fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            document.body.removeChild(fileInput);
-            if (!file) return;
+          toast.success('Processing, please wait...');
 
-            toast.success('Processing, please wait...');
-
-            const image = new Image();
-            image.onload = async () => {
-              URL.revokeObjectURL(image.src);
+          const image = new Image();
+          image.onload = async () => {
+            URL.revokeObjectURL(image.src);
+            try {
               const blob = await shrinkImage(image);
+              if (!blob) throw new Error();
               const formData = new FormData();
               formData.append('file', blob, `${file.name}.res.jpg`);
 
-              try {
-                const response = await fetch('/api/upload', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (!data || !data.total || !data.items) throw new Error();
+              const response = await fetch('/api/upload', { method: 'POST', body: formData });
+              const data = await response.json();
+              if (!data || !data.total || !data.items) throw new Error();
 
-                this.totalPaid = `${this.roundAmount(data.total)}`;
-                this.itemText = data.items
-                  .map((item) => {
-                    const amount = this.roundAmount(item.amount);
-                    const name = (item.name || '').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
-                    return name ? `${amount} - ${name}` : `${amount}`;
-                  })
-                  .join('\n');
-                this.shares = [];
-                toast.success('Data extracted, please verify!');
-              } catch {
-                toast.error('Failed to extract data!');
-              }
-            };
-            image.onerror = () => {
-              URL.revokeObjectURL(image.src);
-              toast.error('Failed to load image!');
-            };
-            image.src = URL.createObjectURL(file);
-          });
-
-          fileInput.click();
+              this.totalPaid = `${this.roundAmount(data.total)}`;
+              this.itemText = data.items
+                .map((item) => {
+                  const amount = this.roundAmount(item.amount);
+                  const name = (item.name || '').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+                  return name ? `${amount} - ${name}` : `${amount}`;
+                })
+                .join('\n');
+              this.shares = [];
+              toast.success('Data extracted, please verify!');
+            } catch {
+              toast.error('Failed to extract data!');
+            }
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(image.src);
+            toast.error('Failed to load image!');
+          };
+          image.src = URL.createObjectURL(file);
         },
 
         /* ---------------------------- Output -------------------------- */
@@ -667,31 +772,20 @@
           }
           if (!confirm('Delete all saved bills?')) return;
 
-          this.stack = { people: [], bills: [] };
+          this.stack = { bills: [] };
           this.stackTotals = null;
           toast.success('All bills deleted!');
         },
 
         recalculateStack() {
-          if (!this.stack.bills.length) {
+          const bills = this.stack.bills;
+          if (!bills.length) {
             this.stackTotals = null;
-            if (this.stack.people.length) this.stack.people = [];
             return;
           }
 
-          const bills = this.stack.bills;
           // Only people who paid or owe something keep a column
-          const people = [
-            ...new Set(
-              bills.flatMap((bill) => [
-                bill.payer,
-                ...Object.entries(bill.totals)
-                  .filter(([, amount]) => amount > 0)
-                  .map(([person]) => person),
-              ])
-            ),
-          ].sort();
-          if (people.join('|') !== this.stack.people.join('|')) this.stack.people = people;
+          const people = this.stackPeople;
 
           const spent = people.map(() => 0);
           const paid = people.map(() => 0);
@@ -700,29 +794,31 @@
           let total = 0;
 
           bills.forEach((bill) => {
-            total += bill.total;
+            const billTotal = toMinor(bill.total) || 0;
+            total += billTotal;
             people.forEach((person, i) => {
-              spent[i] += bill.totals[person] || 0;
-              if (bill.payer === person) paid[i] += bill.total;
+              spent[i] += toMinor(bill.totals[person] || 0) || 0;
+              if (bill.payer === person) paid[i] += billTotal;
             });
             Object.entries(bill.totals).forEach(([person, amount]) => {
               if (bill.payer === person) return;
-              ledger[person] -= amount;
-              ledger[bill.payer] += amount;
+              const cents = toMinor(amount) || 0;
+              ledger[person] -= cents;
+              ledger[bill.payer] += cents;
             });
           });
 
-          const balances = people.map((person) => this.roundAmount(ledger[person]));
+          const balances = people.map((person) => fromMinor(ledger[person]));
 
           this.stackTotals = {
-            total: this.roundAmount(total),
-            spent: spent.map((amount) => this.roundAmount(amount)),
-            paid: paid.map((amount) => this.roundAmount(amount)),
+            total: fromMinor(total),
+            spent: spent.map(fromMinor),
+            paid: paid.map(fromMinor),
             balances,
             transfers: settleBalances(balances).map((transfer) => ({
               from: people[transfer.from],
               to: people[transfer.to],
-              amount: this.roundAmount(transfer.amount),
+              amount: transfer.amount,
             })),
           };
         },
@@ -730,7 +826,7 @@
         async copySettlement() {
           if (!this.stackTotals) return;
 
-          const people = this.stack.people;
+          const people = this.stackPeople;
           const bills = this.stack.bills;
 
           const spentCount = people.map(() => 0);
@@ -764,50 +860,13 @@
         /* --------------------------- Formatting ----------------------- */
 
         roundAmount(value) {
-          const number = parseNumber(value);
-          const factor = this.roundWhole ? 1 : 100;
-          return Number.isFinite(number) ? Math.round(number * factor) / factor : 0;
+          return roundAmount(value, this.roundWhole);
         },
 
         formatAmount(value, decimals = null) {
-          if (value == null || Number.isNaN(Number(value))) return '';
-          const digits = decimals ?? (this.roundWhole ? 0 : 2);
-          return Number(value).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          return formatAmount(value, this.roundWhole, decimals);
         },
       };
     });
   });
-
-  /* ------------------------------------------------------------------ */
-  /* Local helpers                                                      */
-  /* ------------------------------------------------------------------ */
-
-  const pruneShares = (shares, people) => {
-    const pruned = {};
-    Object.entries(shares || {}).forEach(([name, weight]) => {
-      if (people.includes(name)) pruned[name] = weight;
-    });
-    return pruned;
-  };
-
-  const normalizeBill = (bill) => ({
-    payer: bill.payer,
-    note: bill.note,
-    total: bill.total ?? bill.totalPriceWithFee ?? 0,
-    totals: bill.totals ?? bill.peopleTotal ?? {},
-  });
-
-  const shrinkImage = (image) => {
-    const { maxImagePx } = CONFIG;
-    const landscape = image.width > image.height;
-    const width = landscape ? maxImagePx : Math.round((image.width / image.height) * maxImagePx);
-    const height = landscape ? Math.round((image.height / image.width) * maxImagePx) : maxImagePx;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.min(image.width, width);
-    canvas.height = Math.min(image.height, height);
-
-    const resizer = pica();
-    return resizer.resize(image, canvas).then(() => resizer.toBlob(canvas, 'image/jpeg', CONFIG.jpegQuality));
-  };
 })();

@@ -2,7 +2,6 @@ import base64
 import io
 import json
 import os
-import re
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlsplit
 
@@ -20,67 +19,22 @@ MAX_IMAGE_EDGE = 1280
 # OCR-style work does not need a flagship model; override with the
 # RECEIPT_MODEL environment variable to switch tiers without a redeploy.
 RECEIPT_MODEL = os.environ.get('RECEIPT_MODEL', '').strip() or 'gpt-4o-mini'
+OPENAI_TIMEOUT_SECONDS = 30
+MAX_COMPLETION_TOKENS = 1024
 
 
 def _origin_allowed(headers):
     host = (os.environ.get('HOST') or '').strip()
     if not host:
-        return True
+        return False
     try:
         expected = urlsplit(host if '://' in host else f'//{host}').hostname
-        return urlsplit(headers.get('Origin') or headers.get('Referer') or '').hostname == expected
+        origin = headers.get('Origin') or headers.get('Referer')
+        if not origin:
+            return False
+        return urlsplit(origin).hostname == expected
     except ValueError:
         return False
-
-
-def _normalize_amount(value):
-    """Turn a printed amount into a plain period-decimal string.
-
-    The model is asked to preserve separators exactly as printed, so this is
-    where ambiguous formats are interpreted. A single separator followed by
-    three digits is thousands; one or two digits is decimal. When both kinds
-    appear, the rightmost one is the decimal separator.
-    """
-    if not isinstance(value, str):
-        return value
-
-    text = re.sub(r'[^\d.,]', '', value)
-    if not text:
-        return None
-
-    dot = text.rfind('.')
-    comma = text.rfind(',')
-    if dot == -1 and comma == -1:
-        return text
-
-    both = dot != -1 and comma != -1
-    if both:
-        decimal_sep = '.' if dot > comma else ','
-        thousands_sep = ',' if decimal_sep == '.' else '.'
-        text = text.replace(thousands_sep, '')
-    else:
-        separator = '.' if dot != -1 else ','
-        groups = text.split(separator)
-        if len(groups) > 1 and len(groups[-1]) == 3:
-            return ''.join(groups)
-        decimal_sep = separator
-
-    groups = text.split(decimal_sep)
-    tail = groups.pop()
-    return f"{''.join(groups)}.{tail}"
-
-
-def _normalize_receipt(receipt):
-    if not isinstance(receipt, dict):
-        return receipt
-
-    receipt['total'] = _normalize_amount(receipt.get('total'))
-    items = receipt.get('items')
-    if isinstance(items, list):
-        for item in items:
-            if isinstance(item, dict):
-                item['amount'] = _normalize_amount(item.get('amount'))
-    return receipt
 
 
 def _load_image(image_bytes):
@@ -194,7 +148,10 @@ class handler(BaseHTTPRequestHandler):
                 If text or an amount is unreadable or ambiguous, use null for that value. Never
                 infer or guess from context.
             '''
-            client = openai.OpenAI(api_key=openai_api_key)
+            client = openai.OpenAI(
+                api_key=openai_api_key,
+                timeout=OPENAI_TIMEOUT_SECONDS,
+            )
             response = client.chat.completions.create(
                 model=RECEIPT_MODEL,
                 messages=[
@@ -206,7 +163,7 @@ class handler(BaseHTTPRequestHandler):
                         ],
                     }
                 ],
-                max_completion_tokens=1024,
+                max_completion_tokens=MAX_COMPLETION_TOKENS,
                 response_format={
                     'type': 'json_schema',
                     'json_schema': {
@@ -249,7 +206,7 @@ class handler(BaseHTTPRequestHandler):
             if content.startswith('```'):
                 content = content.split('\n', 1)[-1].rsplit('```', 1)[0].strip()
             try:
-                receipt = _normalize_receipt(json.loads(content))
+                receipt = json.loads(content)
             except json.JSONDecodeError:
                 self.send_error(500, 'Failed to parse receipt')
                 return
