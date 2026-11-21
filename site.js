@@ -252,9 +252,9 @@
   /* Settlement                                                         */
   /* ------------------------------------------------------------------ */
 
-  // Exact grouping is O(3^n); 15 remaining nonzero balances is the practical
+  // Exact grouping is O(3^n); 10 remaining nonzero balances is the practical
   // ceiling after exact opposites are removed.
-  const EXACT_LIMIT = 15;
+  const EXACT_LIMIT = 10;
 
   const toEntries = (balances) =>
     balances

@@ -57,7 +57,7 @@ Component methods to keep consistent when editing: `recalculate()`, `recalculate
 - Keep a pure core plus a stateful Alpine shell. `site.js` exports the `spill` namespace and returns before DOM setup when `document` is unavailable, so Node tests use the production functions.
 - Calculate money in integer minor units (`MINOR_DECIMALS = 2`, `MINOR_UNIT = 100`). Use largest-remainder allocation so item shares and person totals sum exactly to their targets. Do not introduce major-unit float calculations.
 - Accept display-level rounding differences: independently rounded item-price cells may not sum to the displayed subtotal, and rounded totals may not exactly reconstruct `feePercent`. Per-portion allocation and settlement must stay exact.
-- Settlement first matches exact opposites (`+9` / `-9`), then finds minimum transfers by maximizing zero-sum groups for up to 15 remaining nonzero balances. Larger remainders use the old largest-first greedy fallback. Exact 30 is not feasible with the subset algorithm.
+- Settlement first matches exact opposites (`+9` / `-9`), then finds minimum transfers by maximizing zero-sum groups for up to 10 remaining nonzero balances. Larger remainders use the old largest-first greedy fallback. Exact 30 is not feasible with the subset algorithm.
 - Use compact URL params `t`, `i`, `p`, and `a`. Newly generated links must stay compatible; legacy `total`/`items` links are intentionally unsupported.
 - Item prices use one item per line and the first standalone amount per line. Spaces split tokens, so `6 000` reads as `6`; semicolons and space thousands separators are not supported.
 - Assignment weights cap at ×2; `All` clears an item’s assignments and shares it equally. Missing assignments mean everyone shares.
@@ -86,7 +86,7 @@ Component methods to keep consistent when editing: `recalculate()`, `recalculate
 - Stacked bills live in the mild-yellow Stack bills card, persisted with Alpine Persist: `Who paid?` and `Bill Name (Optional)` feed the `Save bill` button, and saved bills roll up into Total paid / Total spent / Balance plus the settlement. Stack people are derived from saved bills, not persisted. The stack only tracks people who paid a bill or hold a non-zero share; everyone else is dropped on save, load and delete. The payer may be any name in the roster, including someone with no share of that bill; a payer with no share renders `0` rather than a blank cell.
 - The settlement shows `No settlement needed` (and hides its table) when every balance is zero.
 - Persisted state is limited to `spill:bills` and `spill:roundWhole`; no other keys are read or written.
-- Settlement balances are matched into debtor-to-creditor transactions by `settleBalances()` in `site.js`. It first settles exact opposites, then maximizes zero-sum groups on the remainder to get the minimum transaction count, settling each group largest-first. Above 15 remaining nonzero balances it falls back to the greedy largest-first solver. A negative balance means the person owes money.
+- Settlement balances are matched into debtor-to-creditor transactions by `settleBalances()` in `site.js`. It first settles exact opposites, then maximizes zero-sum groups on the remainder to get the minimum transaction count, settling each group largest-first. Above 10 remaining nonzero balances it falls back to the greedy largest-first solver. A negative balance means the person owes money.
 
 ## Change Guidelines
 
