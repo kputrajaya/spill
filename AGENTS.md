@@ -142,7 +142,7 @@ Settle ledger state, persisted under `spill:settle` (sync code under `spill:sett
 - Balances show `No settlement needed` when every balance is zero.
 - `Clear all` is a grey button in the Transactions card; it resets all transactions after confirmation, keeping the participant list and sync key.
 - `Edit people` and `Copy sync link` sit in the Balances header, in that order. `Copy sync link` creates a 30-character key when needed, stores it in localStorage, copies the current URL with `?k=`, and connects the page to the PubSub channel. Later visits without `?k=` append the stored key to the URL, including root handoffs. Anyone with the link can read or change the ledger; changes sync as full-state snapshots with last write winning.
-- Persisted state is limited to `spill:settle` and `spill:settle:syncKey` on this page, plus the shared `spill:roundWhole` display setting. Old `spill.settle.v1` and `spill.settle.syncKey` values are moved once on load. No other split-page state is shared.
+- Persisted state is limited to `spill:settle` and `spill:settle:syncKey` on this page, plus the shared `spill:roundWhole` display setting. No other split-page state is shared.
 
 ## Change Guidelines
 

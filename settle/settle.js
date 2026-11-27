@@ -430,28 +430,6 @@
   if (typeof module === 'object' && module.exports) module.exports = settle;
   if (typeof document === 'undefined') return;
 
-  // One-time move from the old dotted keys.
-  const migrateLegacyStorage = () => {
-    try {
-      if (localStorage.getItem(STORAGE) == null) {
-        const legacy = localStorage.getItem('spill.settle.v1');
-        if (legacy != null) {
-          localStorage.setItem(STORAGE, legacy);
-          localStorage.removeItem('spill.settle.v1');
-        }
-      }
-
-      if (localStorage.getItem(SYNC_STORAGE) == null) {
-        const legacy = localStorage.getItem('spill.settle.syncKey');
-        if (legacy != null) {
-          localStorage.setItem(SYNC_STORAGE, legacy);
-          localStorage.removeItem('spill.settle.syncKey');
-        }
-      }
-    } catch { }
-  };
-  migrateLegacyStorage();
-
   const ROUND_STORAGE = 'spill:roundWhole';
   const TRANSACTION_WARNING_THRESHOLD = 300;
 
