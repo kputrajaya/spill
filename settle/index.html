@@ -208,12 +208,6 @@
 
             <div class="row g-2">
               <div class="col-12 col-sm-6 field-block">
-                <label class="field-label" for="txnName">Transaction name (optional)</label>
-                <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
-                  x-model="form.name" @input="form.error = null" />
-              </div>
-
-              <div class="col-12 col-sm-6 field-block">
                 <label class="field-label" for="txnPayer">Who paid?</label>
                 <select id="txnPayer" class="form-select" x-model="form.payerId" @change="form.error = null">
                   <option value="" disabled hidden>Pick someone</option>
@@ -221,6 +215,12 @@
                     <option :value="person.id" x-text="person.name"></option>
                   </template>
                 </select>
+              </div>
+
+              <div class="col-12 col-sm-6 field-block">
+                <label class="field-label" for="txnName">Transaction name (optional)</label>
+                <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
+                  x-model="form.name" @input="form.error = null" />
               </div>
             </div>
 

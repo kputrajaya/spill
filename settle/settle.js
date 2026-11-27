@@ -15,7 +15,7 @@
     copyToClipboard,
   } = Shared;
 
-  const STORAGE = 'spill.settle.v1';
+  const STORAGE = 'spill:settle';
   const MAX_PEOPLE = 20;
   const MAX_NAME_LENGTH = 24;
   const MAX_TRANSACTION_NAME = 40;
@@ -278,9 +278,9 @@
   /* ------------------------------------------------------------------ */
 
   const SYNC_HOST = 'wss://pubsub.h.kvn.pt';
-  const SYNC_APP_KEY = 'spill-settle';
+  const SYNC_APP_KEY = 'spill';
   const SYNC_KEY_PARAM = 'k';
-  const SYNC_STORAGE = 'spill.settle.syncKey';
+  const SYNC_STORAGE = 'spill:settle:syncKey';
   const SYNC_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
   const makeSyncKey = () => {
@@ -299,7 +299,7 @@
     if (!key) return;
     try {
       localStorage.setItem(SYNC_STORAGE, key);
-    } catch {}
+    } catch { }
   };
 
   const storedSyncKey = () => {
@@ -317,7 +317,7 @@
     url.searchParams.set(SYNC_KEY_PARAM, key);
     try {
       window.history.replaceState(null, '', url);
-    } catch {}
+    } catch { }
   };
 
   // URL key wins; otherwise reuse the persisted key and put it back in the URL.
@@ -327,7 +327,7 @@
       fromUrl = (new URLSearchParams(window.location.search).get(SYNC_KEY_PARAM) || '')
         .trim()
         .slice(0, 100);
-    } catch {}
+    } catch { }
 
     if (fromUrl) {
       storeSyncKey(fromUrl);
@@ -359,7 +359,7 @@
       else url.searchParams.set(SYNC_KEY_PARAM, existing);
       try {
         window.history.replaceState(null, '', url);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -388,7 +388,7 @@
     if (url.href !== window.location.href) {
       try {
         window.history.replaceState(null, '', url);
-      } catch {}
+      } catch { }
     }
 
     storeSyncKey(key);
@@ -430,6 +430,28 @@
   if (typeof module === 'object' && module.exports) module.exports = settle;
   if (typeof document === 'undefined') return;
 
+  // One-time move from the old dotted keys.
+  const migrateLegacyStorage = () => {
+    try {
+      if (localStorage.getItem(STORAGE) == null) {
+        const legacy = localStorage.getItem('spill.settle.v1');
+        if (legacy != null) {
+          localStorage.setItem(STORAGE, legacy);
+          localStorage.removeItem('spill.settle.v1');
+        }
+      }
+
+      if (localStorage.getItem(SYNC_STORAGE) == null) {
+        const legacy = localStorage.getItem('spill.settle.syncKey');
+        if (legacy != null) {
+          localStorage.setItem(SYNC_STORAGE, legacy);
+          localStorage.removeItem('spill.settle.syncKey');
+        }
+      }
+    } catch { }
+  };
+  migrateLegacyStorage();
+
   const ROUND_STORAGE = 'spill:roundWhole';
   const TRANSACTION_WARNING_THRESHOLD = 300;
 
@@ -442,7 +464,7 @@
     ['from', 't', 'p', 'a'].forEach((param) => url.searchParams.delete(param));
     try {
       window.history.replaceState(null, '', url);
-    } catch {}
+    } catch { }
   };
 
   /* ------------------------------------------------------------------ */
@@ -616,7 +638,9 @@
           }
 
           const copied = await copyToClipboard(url.toString());
-          copied ? toast.success('Sync link copied!') : toast.error('Cannot access clipboard!');
+          copied
+            ? toast.success('Link copied! Share it with someone to collaborate')
+            : toast.error('Cannot access clipboard!');
         },
 
         applyHandoff() {
@@ -906,9 +930,8 @@
               (transaction.shares[person.id] || 0) > 0
           ).length;
           if (usedBy) {
-            this.settingsError = `${person.name} is used by ${usedBy} transaction${
-              usedBy === 1 ? '' : 's'
-            }. Delete those first.`;
+            this.settingsError = `${person.name} is used by ${usedBy} transaction${usedBy === 1 ? '' : 's'
+              }. Delete those first.`;
             return;
           }
 
