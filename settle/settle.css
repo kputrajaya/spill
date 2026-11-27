@@ -1,0 +1,244 @@
+[x-cloak] {
+  display: none !important;
+}
+
+.page.has-sheet {
+  padding-bottom: min(85vh, 720px);
+}
+
+.page.has-add {
+  padding-bottom: 6rem;
+}
+
+:root {
+  --positive-bg: #e4f5e9;
+  --negative-bg: #fde8e8;
+}
+
+.tbl .t-strong.is-positive {
+  background: var(--positive-bg);
+  color: var(--ink);
+}
+
+.tbl .t-strong.is-negative {
+  background: var(--negative-bg);
+  color: var(--ink);
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Transactions                                                        */
+/* ------------------------------------------------------------------ */
+
+.txn-row {
+  cursor: pointer;
+}
+
+.txn-date {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+
+.payer-badge {
+  display: inline-block;
+  margin-right: 0.25rem;
+  padding: 0.02rem 0.38rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: 1px;
+}
+
+.txn-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 900;
+  width: min(928px, calc(100% - 2rem));
+  max-height: min(85vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -14px 44px rgba(17, 17, 17, 0.2);
+}
+
+.add-float {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 800;
+  width: min(928px, calc(100% - 2rem));
+  transform: translateX(-50%);
+}
+
+.add-float .btn {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  box-shadow: 0 10px 26px rgba(17, 17, 17, 0.18);
+}
+
+.txn-sheet-body {
+  padding: 0.9rem 1.05rem calc(1rem + env(safe-area-inset-bottom));
+}
+
+.txn-sheet-body .field-block {
+  margin-top: 0.85rem;
+}
+
+.txn-sheet-body > .field-block:first-child {
+  margin-top: 0;
+  margin-bottom: 0.85rem;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.form-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.form-inline-error {
+  color: var(--warn-ink);
+  font-weight: 600;
+  text-align: left;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Accent buttons stay yellow when disabled; text fades instead. */
+.btn-accent:disabled,
+.btn-accent:disabled:hover {
+  opacity: 1;
+  background: var(--stack-button);
+  border-color: transparent;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Split modes                                                         */
+/* ------------------------------------------------------------------ */
+
+.mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.split-note {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.manual-list {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.manual-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.manual-row:last-child {
+  border-bottom: 0;
+}
+
+.manual-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.manual-row .form-control {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Settings dialog                                                     */
+/* ------------------------------------------------------------------ */
+
+.settle-dialog {
+  width: min(420px, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  overflow: auto;
+  box-shadow: 0 18px 50px rgba(17, 17, 17, 0.2);
+}
+
+.settle-dialog::backdrop {
+  background: rgba(17, 17, 17, 0.35);
+}
+
+.dialog-body {
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 575.98px) {
+  .manual-row {
+    grid-template-columns: minmax(0, 1fr) 6.5rem;
+  }
+}

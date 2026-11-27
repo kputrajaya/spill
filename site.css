@@ -18,21 +18,15 @@
   --quiet-bg: #efefef;
   --quiet-bg-hover: #e2e2e2;
   --row-hover: #fafafa;
-  --tag-bg: var(--ink);
   --x-hover-bg: var(--ink);
   --x-hover-ink: #ffffff;
   --warn-bg: #fdecea;
   --warn-ink: #a11912;
 
-  /* Stack bills accent */
+  /* Mild-yellow accent */
   --stack-bg: #fdf8e4;
-  --stack-border: #f2e8cc;
-  --stack-line: #efe5c6;
-  --stack-line-strong: #e5d9b3;
-  --stack-input: #fdf9ec;
   --stack-button: #f4e9c3;
   --stack-button-hover: #ecdcab;
-  --stack-accent: #c2410c;
 }
 
 /* ------------------------------------------------------------------ */
@@ -167,6 +161,12 @@ body {
 }
 .field-block .field-label {
   margin-bottom: 0.45rem;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.1rem;
 }
 
 .form-control,
@@ -391,11 +391,19 @@ textarea.form-control.list-input {
 .tbl tbody td {
   color: var(--ink-soft);
 }
+.tbl tbody th {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--muted);
+}
 .tbl tbody tr:hover td {
   background: var(--row-hover);
 }
 /* The rule above the totals row matches the header rule */
-.tbl tbody tr:last-child td {
+.tbl tbody tr:last-child td,
+.tbl tbody tr:last-child th {
   border-bottom-color: var(--line-strong);
 }
 .tbl tfoot th {
@@ -428,102 +436,6 @@ textarea.form-control.list-input {
   border-bottom: 0;
 }
 
-.tag {
-  display: inline-block;
-  padding: 0.02rem 0.38rem;
-  border-radius: 999px;
-  background: var(--tag-bg);
-  color: #fff;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  vertical-align: 1px;
-}
-
-/* ------------------------------------------------------------------ */
-/* Stack bills (mild yellow accent)                                    */
-/* ------------------------------------------------------------------ */
-
-.stack-item {
-  --surface: var(--stack-bg);
-  --border: var(--stack-border);
-  --line: var(--stack-line);
-  --line-strong: var(--stack-line-strong);
-  --field-bg: var(--stack-input);
-  --field-focus: #b45309;
-  --focus-ring: rgba(180, 83, 9, 0.13);
-  --quiet-bg: var(--stack-button);
-  --quiet-bg-hover: var(--stack-button-hover);
-  --row-hover: rgba(17, 17, 17, 0.03);
-  --tag-bg: var(--stack-accent);
-  --x-hover-bg: var(--stack-button-hover);
-  --x-hover-ink: var(--ink);
-}
-
-.surface.stack-details {
-  padding: 0;
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.stack-details > summary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.95rem 1.05rem;
-  cursor: pointer;
-  list-style: none;
-}
-.stack-details > summary::-webkit-details-marker {
-  display: none;
-}
-.stack-details > summary:hover {
-  background: rgba(17, 17, 17, 0.02);
-}
-.stack-details > summary:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: -2px;
-}
-.stack-details > summary::after {
-  content: '';
-  width: 0.45rem;
-  height: 0.45rem;
-  margin-left: auto;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg) translate(-1px, -1px);
-  transition: transform 0.15s ease;
-}
-.stack-details[open] > summary::after {
-  transform: rotate(-135deg) translate(-1px, -1px);
-}
-.stack-details .section-title {
-  color: var(--ink);
-}
-
-.stack-body {
-  padding: 0 1.05rem 1.15rem;
-}
-.stack-body > .row {
-  margin-top: 0.6rem;
-}
-.stack-body .section-head {
-  margin-top: 1.75rem;
-}
-.stack-details .field-label {
-  margin-bottom: 0.45rem;
-}
-
-/* Thin footer rules, with a stronger line above and below the summary block */
-.stack-item .tbl tfoot th {
-  border-top: 1px solid var(--line);
-}
-.stack-item .tbl tfoot tr:first-child th {
-  border-top: 1px solid var(--line-strong);
-}
-.stack-item .tbl tfoot tr:last-child th {
-  border-top-color: var(--line-strong);
-}
-
 /* ------------------------------------------------------------------ */
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
@@ -535,6 +447,9 @@ textarea.form-control.list-input {
   .surface {
     border-radius: 14px;
     padding: 0.9rem 0.9rem 1rem;
+  }
+  .input-footer {
+    margin-top: 1rem;
   }
   .btn {
     padding: 0.45rem 0.7rem;

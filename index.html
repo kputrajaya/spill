@@ -1,314 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#ffffff" />
-    <meta name="color-scheme" content="light" />
-    <title>Split Bill</title>
 
-    <link rel="icon" href="favicon-16.png" sizes="16x16" />
-    <link rel="icon" href="favicon-32.png" sizes="32x32" />
-    <link rel="icon" href="favicon-96.png" sizes="96x96" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="color-scheme" content="light" />
+  <title>Split Bill</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
-    <link href="site.css" rel="stylesheet" />
+  <link rel="icon" href="favicon-16.png" sizes="16x16" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="icon" href="favicon-96.png" sizes="96x96" />
 
-    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.17.5/dist/cdn.min.js" defer integrity="sha384-wQUPtgVWygGHRobHJvRb7RggcyyXvTpDpB2OwTm2IycjV37YIv9UzhpzQqWwvPzz" crossorigin="anonymous"></script>
-    <script src="site.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.5/dist/cdn.min.js" defer integrity="sha384-FYLKjwG3aohNhNZoVG8sY/5ntunm+MqylL90Q+rT3OM7AwV9/BKFjk/RjoIpIgsI" crossorigin="anonymous"></script>
-  </head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
+  <link href="site.css" rel="stylesheet" />
 
-  <body>
-    <div class="container page" x-data="spill">
-      <header class="page-head">
-        <h1>&#128176; Split Bill</h1>
-        <button class="btn btn-accent" type="button" @click="$refs.receiptInput.click()">Scan receipt</button>
-      </header>
-      <input x-ref="receiptInput" type="file" accept="image/*,text/plain" hidden @change="scanReceipt($event)" />
+  <script src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.17.5/dist/cdn.min.js" defer
+    integrity="sha384-wQUPtgVWygGHRobHJvRb7RggcyyXvTpDpB2OwTm2IycjV37YIv9UzhpzQqWwvPzz"
+    crossorigin="anonymous"></script>
+  <script src="shared.js" defer></script>
+  <script src="site.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.5/dist/cdn.min.js" defer
+    integrity="sha384-FYLKjwG3aohNhNZoVG8sY/5ntunm+MqylL90Q+rT3OM7AwV9/BKFjk/RjoIpIgsI"
+    crossorigin="anonymous"></script>
+</head>
 
-      <!-- Input -->
-      <section class="surface">
-        <div class="section-head">
-          <span class="section-title">Input</span>
-          <div class="form-check form-switch m-0">
-            <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
-            <label class="form-check-label help" for="roundWholeInput">Round numbers</label>
+<body>
+  <div class="container page" x-data="spill">
+    <header class="page-head flex-wrap">
+      <h1>&#128176; Split Bill</h1>
+      <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+        <button class="btn btn-quiet btn-sm" type="button" @click="sendToSettle">Settle bills &rarr;</button>
+      </div>
+    </header>
+    <input x-ref="receiptInput" type="file" accept="image/*,text/plain" hidden @change="scanReceipt($event)" />
+
+    <!-- Input -->
+    <section class="surface">
+      <div class="section-head">
+        <span class="section-title">Input</span>
+        <button class="btn btn-accent btn-sm" type="button" @click="$refs.receiptInput.click()">Scan receipt</button>
+      </div>
+
+      <div class="field-block">
+        <label class="field-label" for="namesInput">
+          People
+        </label>
+        <input id="namesInput" class="form-control" type="text" autocomplete="off" placeholder="JOHN JANE"
+          x-model="nameText" @blur="normalizeNames()" />
+      </div>
+
+      <div class="field-block">
+        <div class="items-split">
+          <div class="items-prices">
+            <label class="field-label" for="itemsInput">
+              Item prices
+            </label>
+            <textarea id="itemsInput" class="form-control list-input" rows="2" wrap="off" placeholder="20000&#10;30000"
+              x-model="itemText"></textarea>
           </div>
-        </div>
 
-        <div class="field-block">
-          <label class="field-label" for="namesInput">
-            People
-          </label>
-          <input
-            id="namesInput"
-            class="form-control"
-            type="text"
-            autocomplete="off"
-            placeholder="ANN JOE"
-            x-model="nameText"
-            @blur="normalizeNames()"
-          />
-        </div>
-
-        <div class="field-block">
-          <div class="items-split">
-            <div class="items-prices">
-              <label class="field-label" for="itemsInput">
-                Item prices
-              </label>
-              <textarea
-                id="itemsInput"
-                class="form-control list-input"
-                rows="2"
-                wrap="off"
-                placeholder="20000&#10;30000"
-                x-model="itemText"
-              ></textarea>
-            </div>
-
-            <div class="items-assign" x-show="assignmentItems.length && people.length">
-              <div class="item-chips-list">
-                <template x-for="row in chipRows" :key="row.key">
-                  <div class="item-chips">
-                    <button
-                      type="button"
-                      class="chip"
-                      x-show="!row.placeholder"
-                      :class="{ 'is-on': !row.placeholder && row.shareCount === 0 }"
-                      @click="shareEveryone(row.index)"
-                      aria-label="Shared by everyone"
-                      :aria-pressed="!row.placeholder && row.shareCount === 0"
-                    >
-                      All
+          <div class="items-assign" x-show="assignmentItems.length && people.length">
+            <div class="item-chips-list">
+              <template x-for="row in chipRows" :key="row.key">
+                <div class="item-chips">
+                  <button type="button" class="chip" x-show="!row.placeholder"
+                    :class="{ 'is-on': !row.placeholder && row.shareCount === 0 }" @click="shareEveryone(row.index)"
+                    aria-label="Shared by everyone" :aria-pressed="!row.placeholder && row.shareCount === 0">
+                    All
+                  </button>
+                  <template x-for="person in people" :key="person">
+                    <button type="button" class="chip" x-show="!row.placeholder"
+                      :class="{ 'is-on': row.shares[person] > 0 }" @click="cycleShare(row.index, person)"
+                      :aria-pressed="row.shares[person] > 0">
+                      <span x-text="person"></span>
+                      <span class="chip-weight" x-show="row.shares[person] > 1"
+                        x-text="`×${row.shares[person]}`"></span>
                     </button>
-                    <template x-for="person in people" :key="person">
-                      <button
-                        type="button"
-                        class="chip"
-                        x-show="!row.placeholder"
-                        :class="{ 'is-on': row.shares[person] > 0 }"
-                        @click="cycleShare(row.index, person)"
-                        :aria-pressed="row.shares[person] > 0"
-                      >
-                        <span x-text="person"></span>
-                        <span class="chip-weight" x-show="row.shares[person] > 1" x-text="`×${row.shares[person]}`"></span>
-                      </button>
-                    </template>
-                  </div>
-                </template>
-              </div>
+                  </template>
+                </div>
+              </template>
             </div>
           </div>
-
-          <p class="help help-warn mt-2 mb-0" x-show="warning" x-text="warning" role="status" aria-live="polite"></p>
         </div>
 
-        <div class="field-block">
-          <label class="field-label" for="totalInput">
-            Total paid (optional)
-          </label>
-          <input
-            id="totalInput"
-            class="form-control"
-            type="text"
-            inputmode="decimal"
-            autocomplete="off"
-            placeholder="55000"
-            x-model="totalPaid"
-            :aria-invalid="!!error"
-            :aria-describedby="error ? 'totalError' : null"
-          />
-          <p id="totalError" class="help help-warn mt-2 mb-0" x-show="error" x-text="error" role="alert"></p>
+        <p class="help help-warn mt-2 mb-0" x-show="warning" x-text="warning" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="field-block">
+        <label class="field-label" for="totalInput">
+          Total amount (optional)
+        </label>
+        <input id="totalInput" class="form-control" type="text" inputmode="decimal" autocomplete="off"
+          placeholder="55000" x-model="totalPaid" :aria-invalid="!!error"
+          :aria-describedby="error ? 'totalError' : null" />
+        <p id="totalError" class="help help-warn mt-2 mb-0" x-show="error" x-text="error" role="alert"></p>
+      </div>
+
+      <div class="input-footer">
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
+          <label class="form-check-label help" for="roundWholeInput">Round numbers</label>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Result -->
-      <section class="surface">
-        <div class="section-head">
-          <span class="section-title">Result</span>
-          <div class="d-flex gap-2">
-            <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
-            <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
-          </div>
+    <!-- Result -->
+    <section class="surface">
+      <div class="section-head">
+        <span class="section-title">Result</span>
+        <div class="d-flex flex-wrap justify-content-end gap-2">
+          <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
+          <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
         </div>
+      </div>
 
-        <template x-if="!bill">
-          <p class="help mb-0">Fill in the inputs correctly to view the result</p>
-        </template>
+      <template x-if="!bill">
+        <p class="help mb-0">Fill in the inputs correctly to view the result</p>
+      </template>
 
-        <template x-if="bill">
-          <div class="table-wrap">
-            <table class="tbl">
-              <thead>
+      <template x-if="bill">
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th scope="col" class="t-start">No</th>
+                <th scope="col">Price</th>
+                <th scope="col">
+                  W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)
+                </th>
+                <template x-for="person in bill.people" :key="person">
+                  <th scope="col" x-text="person"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="item in bill.items" :key="item.index">
                 <tr>
-                  <th scope="col" class="t-start">No</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">
-                    W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)
-                  </th>
+                  <td class="t-start" x-text="item.index + 1"></td>
+                  <td x-text="formatAmount(item.price)"></td>
+                  <td x-text="formatAmount(item.priceWithFee)"></td>
                   <template x-for="person in bill.people" :key="person">
-                    <th scope="col" x-text="person"></th>
+                    <td x-text="formatAmount(item.shares[person])"></td>
                   </template>
                 </tr>
-              </thead>
-              <tbody>
-                <template x-for="item in bill.items" :key="item.index">
-                  <tr>
-                    <td class="t-start" x-text="item.index + 1"></td>
-                    <td x-text="formatAmount(item.price)"></td>
-                    <td x-text="formatAmount(item.priceWithFee)"></td>
-                    <template x-for="person in bill.people" :key="person">
-                      <td x-text="formatAmount(item.shares[person])"></td>
-                    </template>
-                  </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" class="t-start">Total</th>
+                <th scope="col" x-text="formatAmount(bill.subtotal)"></th>
+                <th scope="col" x-text="formatAmount(bill.total)"></th>
+                <template x-for="person in bill.people" :key="person">
+                  <th scope="col" class="t-strong" x-text="formatAmount(bill.totals[person])"></th>
                 </template>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th scope="row" class="t-start">Total</th>
-                  <th scope="col" x-text="formatAmount(bill.subtotal)"></th>
-                  <th scope="col" x-text="formatAmount(bill.total)"></th>
-                  <template x-for="person in bill.people" :key="person">
-                    <th scope="col" class="t-strong" x-text="formatAmount(bill.totals[person])"></th>
-                  </template>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </template>
-      </section>
-
-      <!-- Stacked bills -->
-      <details class="surface stack-item stack-details mt-4">
-        <summary>
-          <span class="section-title">Stack bills</span>
-          <span class="help ms-2" x-show="stack.bills.length" x-text="`${stack.bills.length} saved`"></span>
-        </summary>
-
-        <div class="stack-body">
-          <div class="row g-2 align-items-end">
-            <div class="col-12 col-sm-4">
-              <label class="field-label" for="stackPayer">Who paid?</label>
-              <select id="stackPayer" class="form-select" x-model="stackPayer">
-                <option value="" disabled hidden>Pick someone</option>
-                <template x-for="person in payerOptions" :key="person">
-                  <option :value="person" x-text="person"></option>
-                </template>
-              </select>
-            </div>
-            <div class="col-12 col-sm-4">
-              <label class="field-label" for="stackNote">Bill Name (Optional)</label>
-              <input id="stackNote" class="form-control" type="text" maxlength="40" placeholder="Dinner Oct 16" x-model="stackNote" />
-            </div>
-            <div class="col-12 col-sm-4 d-grid">
-              <button class="btn btn-quiet" type="button" @click="saveBill()">Save bill</button>
-            </div>
-          </div>
-
-          <p class="help mb-0 mt-3" x-show="!stack.bills.length">Save the bill above to settle multiple later</p>
-
-          <template x-if="stack.bills.length">
-            <div>
-              <div class="section-head">
-                <span class="section-title">Saved bills</span>
-                <button class="btn btn-quiet btn-sm" type="button" @click="clearBills()">Clear</button>
-              </div>
-
-              <div class="table-wrap">
-                <table class="tbl">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="t-start">Bill</th>
-                      <th scope="col">Total</th>
-                      <template x-for="person in stackPeople" :key="person">
-                        <th scope="col" x-text="person"></th>
-                      </template>
-                      <th scope="col" class="t-center"><span class="visually-hidden">Actions</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="(savedBill, billIndex) in stack.bills" :key="billIndex">
-                      <tr>
-                        <td class="t-start" x-text="savedBill.note || billIndex + 1"></td>
-                        <td x-text="formatAmount(savedBill.total)"></td>
-                        <template x-for="person in stackPeople" :key="person">
-                          <td>
-                            <span class="tag" title="This person paid the bill" x-show="savedBill.payer === person">P</span>
-                            <span
-                              x-text="savedBill.payer === person || savedBill.totals[person] ? formatAmount(savedBill.totals[person] || 0) : ''"
-                            ></span>
-                          </td>
-                        </template>
-                        <td class="t-center">
-                          <button type="button" class="btn-x" title="Delete this bill" aria-label="Delete this bill" @click="deleteBill(billIndex)">
-                            &times;
-                          </button>
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th scope="row" class="t-start">Total paid</th>
-                      <th scope="col" rowspan="2" x-text="formatAmount(stackTotals.total)"></th>
-                      <template x-for="(amount, i) in stackTotals.paid" :key="i">
-                        <th scope="col" x-text="formatAmount(amount)"></th>
-                      </template>
-                      <th scope="col"></th>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="t-start">Total spent</th>
-                      <template x-for="(amount, i) in stackTotals.spent" :key="i">
-                        <th scope="col" x-text="formatAmount(amount)"></th>
-                      </template>
-                      <th scope="col"></th>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="t-start">Balance</th>
-                      <th scope="col"></th>
-                      <template x-for="(amount, i) in stackTotals.balances" :key="i">
-                        <th scope="col" x-text="formatAmount(amount)"></th>
-                      </template>
-                      <th scope="col"></th>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <div class="section-head">
-                <span class="section-title">Settlement</span>
-                <button class="btn btn-quiet btn-sm" type="button" @click="copySettlement">Copy summary</button>
-              </div>
-
-              <p class="help mb-0" x-show="!stackTotals.transfers.length" role="status" aria-live="polite">No settlement needed</p>
-
-              <div class="table-wrap" x-show="stackTotals.transfers.length">
-                <table class="tbl tbl-settle">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="t-start">From</th>
-                      <th scope="col" class="t-start">To</th>
-                      <th scope="col">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="(transfer, i) in stackTotals.transfers" :key="i">
-                      <tr>
-                        <td class="t-start" x-text="transfer.from"></td>
-                        <td class="t-start" x-text="transfer.to"></td>
-                        <td x-text="formatAmount(transfer.amount)"></td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </template>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-      </details>
-    </div>
-    <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
-  </body>
+      </template>
+    </section>
+
+  </div>
+  <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+
 </html>
