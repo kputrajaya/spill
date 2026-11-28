@@ -514,17 +514,6 @@
           copied ? toast.success('Summary copied.') : toast.error('Clipboard unavailable.');
         },
 
-        async copyShareLink() {
-          if (!this.bill?.people?.length) {
-            toast.error('Complete the bill first.');
-            return;
-          }
-
-          flushUrlState();
-          const copied = await copyToClipboard(location.href);
-          copied ? toast.success('Link copied.') : toast.error('Clipboard unavailable.');
-        },
-
         /* ------------------------ Settle handoff ---------------------- */
 
         // The settle page reads these params once, then cleans its URL.

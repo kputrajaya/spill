@@ -847,6 +847,10 @@
         /* ---------------------------- Setup --------------------------- */
 
         init() {
+          window.addEventListener('resize', () => {
+            if (this.formOpen) this.$nextTick(() => this.alignSheet());
+          });
+
           const loaded = loadIndex();
           this.ledgers = loaded.index.ledgers;
 
@@ -1148,6 +1152,7 @@
             error: null,
           };
           this.formOpen = true;
+          this.$nextTick(() => this.alignSheet());
         },
 
         cancelForm() {
@@ -1157,6 +1162,16 @@
           this.formOpen = false;
           this.form = null;
           if (pendingHandoff) clearHandoffParams();
+        },
+
+        alignSheet() {
+          const sheet = this.$refs.txnSheet;
+          const card = document.querySelector('.surface');
+          if (!sheet || !card) return;
+          const rect = card.getBoundingClientRect();
+          sheet.style.left = `${rect.left}px`;
+          sheet.style.width = `${rect.width}px`;
+          sheet.style.transform = 'none';
         },
 
         previewFor(mode) {
@@ -1200,14 +1215,19 @@
         },
 
         // Staged handoff people live only in the form. Commit them on save,
-        // reusing any same-name person that arrived from sync while the form
-        // was open, then remap the transaction's payer and shares.
+        // keeping only new people with a share or the payer, reusing any
+        // same-name person that arrived from sync while the form was open,
+        // then remap the transaction's payer and shares.
         commitStagedPeople(form, transaction) {
           const staged = form?.stagedPeople || [];
           if (!staged.length) return;
 
           const idMap = new Map();
           staged.forEach((person) => {
+            const paid = transaction.payerId === person.id;
+            const share = transaction.shares[person.id] || 0;
+            if (!paid && share <= 0) return;
+
             const existing = this.state.people.find(
               (entry) => nameKey(entry.name) === nameKey(person.name)
             );
