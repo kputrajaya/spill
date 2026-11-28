@@ -7,13 +7,12 @@
 }
 
 .page.has-add {
-  padding-bottom: calc(3.875rem + var(--bottom-ui-inset));
+  padding-bottom: 3.875rem;
 }
 
 :root {
   --positive-bg: #e4f5e9;
   --negative-bg: #fde8e8;
-  --bottom-ui-inset: 0px;
 }
 
 .tbl .t-strong.is-positive {
@@ -82,10 +81,7 @@
   display: flex;
   flex-direction: column;
   width: min(928px, calc(100% - 2rem));
-  min-height: 80vh;
-  min-height: 80dvh;
-  max-height: 85vh;
-  max-height: 85dvh;
+  height: 80vh;
   overflow: hidden;
   overscroll-behavior: contain;
   transform: translateX(-50%);
@@ -99,10 +95,11 @@
 .add-float {
   position: fixed;
   left: 50%;
-  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 800;
   width: min(928px, calc(100% - 2rem));
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
+  will-change: transform;
 }
 
 .add-float .btn {
@@ -111,16 +108,9 @@
   box-shadow: 0 10px 26px rgba(17, 17, 17, 0.18);
 }
 
-/* Keep a single inset for the floating button, sheet actions, and toasts.
-   A host shell can override --bottom-ui-inset with its real bar height. */
+/* Keep page toasts above the mobile home-indicator inset. */
 .toast-stack {
-  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
-}
-
-@media (max-width: 575.98px) {
-  :root {
-    --bottom-ui-inset: 5rem;
-  }
+  bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
 .txn-sheet-body {
@@ -146,7 +136,7 @@
   gap: 0.5rem;
   flex-shrink: 0;
   margin-top: 0;
-  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
+  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
