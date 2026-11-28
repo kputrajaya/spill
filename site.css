@@ -37,6 +37,12 @@
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
+html {
+  /* Stop Android/iOS WebView text autosizing from breaking row alignment. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   max-width: 100%;
@@ -451,6 +457,10 @@ textarea.form-control.list-input {
   .surface {
     border-radius: 14px;
     padding: 0.9rem 0.9rem 1rem;
+  }
+  .items-split {
+    /* Give the price text more room; chips scroll sideways when needed. */
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
   .input-footer {
     margin-top: 1rem;

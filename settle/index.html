@@ -205,8 +205,9 @@
       </div>
 
       <!-- Add / edit form -->
+      <div class="txn-backdrop" x-show="formOpen" x-cloak aria-hidden="true"></div>
       <template x-if="formOpen">
-        <div class="txn-sheet" role="dialog" aria-label="Add or edit transaction"
+        <div class="txn-sheet" role="dialog" aria-modal="true" aria-label="Add or edit transaction"
           @keydown.escape.stop="cancelForm()">
           <div class="txn-sheet-body">
             <div class="field-block">

@@ -59,12 +59,21 @@
   vertical-align: 1px;
 }
 
+.txn-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 899;
+  background: rgba(17, 17, 17, 0.35);
+}
+
 .txn-sheet {
   position: fixed;
   left: 50%;
   bottom: 0;
   z-index: 900;
   width: min(928px, calc(100% - 2rem));
+  min-height: min(50vh, 720px);
+  min-height: min(50dvh, 720px);
   max-height: min(85vh, 720px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -260,7 +269,7 @@
 
 .ledger-choice {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
   min-width: 0;
   font-size: 0.8rem;
@@ -269,6 +278,7 @@
 
 .ledger-choice input {
   margin: 0;
+  align-self: center;
 }
 
 .ledger-count {
