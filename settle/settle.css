@@ -2,6 +2,23 @@
   display: none !important;
 }
 
+/* Keep the document itself fixed and scroll only the page content. This
+   prevents mobile URL bars and overscroll bounce from moving fixed UI. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.page {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 .page.has-sheet {
   padding-bottom: min(85vh, 720px);
 }
@@ -124,6 +141,16 @@
 /* Keep page toasts above the mobile home-indicator inset. */
 .toast-stack {
   bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 575.98px) {
+  .page {
+    scrollbar-width: none;
+  }
+  .page::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
 
 .txn-sheet-body {

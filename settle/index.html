@@ -381,10 +381,10 @@
     </dialog>
   </template>
 
-  <dialog class="add-float" x-ref="addFloat" x-init="$nextTick(() => alignBottomUi())" aria-label="Add transaction"
-    @cancel.prevent>
+  <div class="add-float" x-ref="addFloat" x-show="!formOpen && canAddTransaction" x-cloak
+    x-init="$nextTick(() => alignBottomUi())">
     <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
-  </dialog>
+  </div>
 
   <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>
