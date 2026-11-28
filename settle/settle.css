@@ -12,7 +12,7 @@ body {
 }
 
 .page {
-  height: 100%;
+  height: var(--app-viewport-height, 100%);
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior-y: none;
@@ -20,7 +20,7 @@ body {
 }
 
 .page.has-sheet {
-  padding-bottom: min(85vh, 720px);
+  padding-bottom: min(calc(var(--app-viewport-height, 100%) * 0.85), 720px);
 }
 
 .page.has-add {
@@ -87,12 +87,12 @@ body {
   position: fixed;
   top: auto;
   right: 0;
-  bottom: 0;
+  bottom: var(--app-bottom-inset, 0px);
   left: 0;
   z-index: 900;
   flex-direction: column;
   width: min(928px, calc(100% - 2rem));
-  height: 80vh;
+  height: calc(var(--app-viewport-height, 100%) * 0.8);
   max-width: none;
   max-height: none;
   margin: 0 auto;
@@ -119,7 +119,7 @@ body {
   position: fixed;
   top: auto;
   right: 0;
-  bottom: calc(1rem + env(safe-area-inset-bottom));
+  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--app-bottom-inset, 0px));
   left: 0;
   z-index: 800;
   width: min(928px, calc(100% - 2rem));
@@ -140,7 +140,7 @@ body {
 
 /* Keep page toasts above the mobile home-indicator inset. */
 .toast-stack {
-  bottom: calc(1rem + env(safe-area-inset-bottom));
+  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--app-bottom-inset, 0px));
 }
 
 @media (max-width: 575.98px) {

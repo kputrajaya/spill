@@ -848,8 +848,12 @@
 
         init() {
           window.addEventListener('resize', () => {
+            this.syncViewport();
             this.$nextTick(() => this.alignBottomUi());
           });
+          window.visualViewport?.addEventListener('resize', () => this.syncViewport());
+          window.visualViewport?.addEventListener('scroll', () => this.syncViewport());
+          this.syncViewport();
 
           const loaded = loadIndex();
           this.ledgers = loaded.index.ledgers;
@@ -1188,6 +1192,22 @@
             el.style.margin = '0';
             el.style.transform = 'none';
           });
+        },
+
+        syncViewport() {
+          const vv = window.visualViewport;
+          const height = Math.round(vv ? vv.height : window.innerHeight);
+          const layoutHeight = document.documentElement.clientHeight || window.innerHeight;
+          const offsetTop = vv ? vv.offsetTop : 0;
+          const inset = Math.max(0, Math.round(layoutHeight - height - offsetTop));
+          document.documentElement.style.setProperty(
+            '--app-viewport-height',
+            `${height}px`
+          );
+          document.documentElement.style.setProperty(
+            '--app-bottom-inset',
+            `${inset}px`
+          );
         },
 
         previewFor(mode) {
