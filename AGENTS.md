@@ -122,7 +122,7 @@ Each settle ledger is persisted under `spill:settle:ledger:<key>`. The index und
 
 ### Split page
 
-- One Input card holds three fields: **People**, **Item prices**, and **Total**, plus the yellow `Scan receipt` button at the top right and the `Whole numbers` switch at the bottom. Inputs use the default sans-serif font; the price field grows with its content, never scrolls vertically, and scrolls sideways instead of wrapping. Placeholders are `JOHN JANE`, two prices, and `55000`.
+- One Input card holds three fields: **People**, **Item prices**, and **Total**, plus the yellow `Scan receipt` button at the top right and the `Whole numbers` switch at the bottom. Inputs use the default sans-serif font; the price field grows with its content, never scrolls vertically, and scrolls sideways instead of wrapping. Placeholders are `JANE JOHN`, two prices, and `55000`.
 - Input and Result are always-expanded cards.
 - Per-field guidance stays out of paragraphs under the fields.
 - Prices are entered or pasted into one field; each line becomes at most one item, using its first standalone amount. Later numbers on the same line, such as quantities or package sizes, are ignored. Lines may carry a name, as `Name 30.000` or `30.000 - Name`; the name stays visible in the field but is not used in calculations.
