@@ -110,8 +110,15 @@ test('parseItems skips broken amounts and blank lines', () => {
     blank.items.map((item) => item.price),
     [6000, 27500]
   );
-  assert.equal(blank.skipped, 1);
+  assert.equal(blank.skipped, 0);
   assert.deepEqual(blank.lineIndexes, [0, null, 1]);
+
+  const trailing = parseItems('6000\n27500\n');
+  assert.deepEqual(
+    trailing.items.map((item) => item.price),
+    [6000, 27500]
+  );
+  assert.equal(trailing.skipped, 0);
 });
 
 test('parseNames normalizes, deduplicates, and sorts names', () => {
@@ -181,7 +188,7 @@ test('calculateBill rounds to cents when rounding is off', () => {
   assert.equal(sumCents(bill.totals), sumCents({ total: bill.total }));
 });
 
-test('calculateBill rounds to whole numbers when rounding is on', () => {
+test('calculateBill keeps exact cents when display rounding is on', () => {
   const { bill } = calculateBill({
     total: '',
     items: [10000, 10000],
@@ -190,10 +197,20 @@ test('calculateBill rounds to whole numbers when rounding is on', () => {
     roundWhole: true,
   });
 
-  assert.deepEqual(bill.items[0].shares, { PP: 3334, MJ: 3333, AB: 3333 });
-  assert.deepEqual(bill.items[1].shares, { PP: 3333, MJ: 3334, AB: 3333 });
-  assert.deepEqual(bill.totals, { PP: 6667, MJ: 6667, AB: 6666 });
+  assert.deepEqual(bill.items[0].shares, { PP: 3333.34, MJ: 3333.33, AB: 3333.33 });
+  assert.deepEqual(bill.items[1].shares, { PP: 3333.33, MJ: 3333.34, AB: 3333.33 });
+  assert.deepEqual(bill.totals, { PP: 6666.67, MJ: 6666.67, AB: 6666.66 });
   assert.equal(sumCents(bill.totals), sumCents({ total: bill.total }));
+  assert.equal(
+    calculateBill({
+      total: '10000.40',
+      items: [10000],
+      people: ['PP'],
+      shares: [{}],
+      roundWhole: true,
+    }).bill.total,
+    10000.4
+  );
 });
 
 test('calculateBill rounds a fractional fee split', () => {
@@ -383,6 +400,45 @@ test('exact solver matches brute force on deterministic cases', () => {
       `random ${run}: not the minimum (${JSON.stringify(balances)})`
     );
   }
+});
+
+test('repairStoredJson backs up and removes malformed persisted values', () => {
+  const { repairStoredJson } = require('../shared.js');
+  const original = Object.getOwnPropertyDescriptor(global, 'localStorage');
+  const store = new Map([
+    ['bad', '{oops'],
+    ['good', 'true'],
+    ['wrong', '"yes"'],
+  ]);
+  Object.defineProperty(global, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => store.set(key, String(value)),
+      removeItem: (key) => store.delete(key),
+    },
+  });
+
+  try {
+    const isBoolean = (value) => typeof value === 'boolean';
+    assert.equal(repairStoredJson('good', isBoolean), false);
+    assert.equal(repairStoredJson('bad', isBoolean), true);
+    assert.equal(store.has('bad'), false);
+    assert.equal(store.get('bad:corrupt'), '{oops');
+    assert.equal(repairStoredJson('wrong', isBoolean), true);
+    assert.equal(store.has('wrong'), false);
+  } finally {
+    if (original) Object.defineProperty(global, 'localStorage', original);
+    else delete global.localStorage;
+  }
+});
+
+test('eleven active balances still use the exact solver', () => {
+  const balances = [-187, 140, -103, -182, 44, -152, 199, 176, -146, 68, 143].map(
+    (cents) => cents / 100
+  );
+  const transfers = assertSettled(balances, 'eleven balances');
+  assert.equal(transfers.length, 9);
 });
 
 test('large stacks still settle through the greedy fallback', () => {

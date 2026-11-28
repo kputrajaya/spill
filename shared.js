@@ -95,9 +95,10 @@
   /* Settlement                                                         */
   /* ------------------------------------------------------------------ */
 
-  // Exact grouping is O(3^n); 10 remaining nonzero balances is the practical
+  // Exact grouping is O(3^n); 12 remaining nonzero balances is the practical
   // ceiling after exact opposites are removed.
-  const EXACT_LIMIT = 10;
+  const EXACT_LIMIT = 12;
+  const MAX_SETTLE_PEOPLE = 20;
 
   const toEntries = (balances) =>
     balances
@@ -230,11 +231,44 @@
   /* Browser UI helpers                                                 */
   /* ------------------------------------------------------------------ */
 
+  // Alpine $persist parses storage before init and has no error handling.
+  // Validate the two persisted values before Alpine starts, keep a copy of a
+  // corrupt value, and remove it so $persist falls back to its default.
+  const repairStoredJson = (key, isValid) => {
+    if (typeof localStorage === 'undefined') return false;
+
+    let raw;
+    try {
+      raw = localStorage.getItem(key);
+    } catch {
+      return false;
+    }
+    if (raw == null) return false;
+
+    try {
+      if (isValid(JSON.parse(raw))) return false;
+    } catch { }
+
+    // Backup and removal are separate: a full quota must not stop the key
+    // from being cleared before $persist reads it.
+    try {
+      localStorage.setItem(`${key}:corrupt`, raw);
+    } catch { }
+    try {
+      localStorage.removeItem(key);
+    } catch { }
+    return true;
+  };
+
   const TOAST_DURATION_MS = 2500;
 
   const showToast = (message, type = 'success') => {
     if (typeof document === 'undefined') return;
-    const stack = document.getElementById('toastStack');
+    // Native <dialog> sits in the top layer, above page-level toasts. Prefer a
+    // stack inside the open dialog so feedback remains visible.
+    const stack =
+      document.querySelector('dialog[open] [data-toast-stack]') ||
+      document.getElementById('toastStack');
     if (!stack) return;
 
     const item = document.createElement('div');
@@ -282,10 +316,12 @@
     settleBalances,
     settleGreedy,
     EXACT_LIMIT,
+    MAX_SETTLE_PEOPLE,
     formatTimestamp,
     formatAmount,
     toast,
     copyToClipboard,
+    repairStoredJson,
   };
 
   if (typeof module === 'object' && module.exports) module.exports = core;

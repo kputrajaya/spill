@@ -149,11 +149,9 @@
 }
 
 .split-note {
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.68rem;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .manual-list {
@@ -192,6 +190,22 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Tables                                                              */
+/* ------------------------------------------------------------------ */
+
+/* People columns stand out from the secondary metric/name headers. */
+.tbl thead th.t-person {
+  color: var(--ink);
+}
+
+/* The balances and transactions tables end without a trailing rule. */
+.tbl-balances tbody tr:last-child td,
+.tbl-balances tbody tr:last-child th,
+.tbl-transactions tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ */
 /* Settings dialog                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -215,6 +229,21 @@
   padding: 1rem 1.05rem 1.1rem;
 }
 
+/* Keep dialog feedback inside the dialog instead of the page bottom. */
+.settle-dialog .toast-stack {
+  position: sticky;
+  left: auto;
+  bottom: 0.5rem;
+  width: auto;
+  max-width: 100%;
+  margin-top: 0.75rem;
+  transform: none;
+}
+
+.settle-dialog .toast-stack:empty {
+  margin-top: 0;
+}
+
 .settings-list {
   display: flex;
   flex-direction: column;
@@ -227,6 +256,25 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
+}
+
+.ledger-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.ledger-choice input {
+  margin: 0;
+}
+
+.ledger-count {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .settings-add {

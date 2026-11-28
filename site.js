@@ -9,19 +9,19 @@
       : window.SpillCore;
 
   const {
-    MINOR_UNIT,
     parseNumber,
     toMinor,
     fromMinor,
-    roundToUnit,
     distributeUnits,
     roundAmount,
     formatAmount,
     settleBalances,
     settleGreedy,
     EXACT_LIMIT,
+    MAX_SETTLE_PEOPLE,
     toast,
     copyToClipboard,
+    repairStoredJson,
   } = Core;
 
   /* ------------------------------------------------------------------ */
@@ -33,7 +33,6 @@
     jpegQuality: 0.7,
     maxShare: 2,
     maxNameLength: 24,
-    maxSettlePeople: 20,
   };
 
   // The only state that persists is the rounding switch
@@ -86,7 +85,8 @@
     const text = String(raw || '').replace(/\r/g, '');
     const items = [];
 
-    const lineIndexes = text.split('\n').map((line) => {
+    const lines = text.split('\n');
+    const lineIndexes = lines.map((line) => {
       // Left to right, first standalone amount wins; later numbers
       // (quantities, package sizes, stray totals) are ignored. A token with
       // broken punctuation such as "6x0j00" never matches, so it is skipped.
@@ -97,7 +97,12 @@
       return items.length - 1;
     });
 
-    const skipped = text.trim() ? lineIndexes.filter((index) => index === null).length : 0;
+    // Blank lines only exist to keep the chip rows aligned; do not report them
+    // as skipped, or a pasted list ending in a newline shows a false warning.
+    const skipped = lines.reduce(
+      (count, line, index) => (lineIndexes[index] === null && line.trim() ? count + 1 : count),
+      0
+    );
     return { items, skipped, lineIndexes };
   };
 
@@ -130,11 +135,9 @@
 
     const subtotalCents = priceCents.reduce((sum, cents) => sum + cents, 0);
     const fee = totalCents === null ? 0 : (totalCents - subtotalCents) / subtotalCents;
-    const unit = roundWhole ? MINOR_UNIT : 1;
-    const targetTotalCents = roundToUnit(totalCents === null ? subtotalCents : totalCents, unit);
-    const itemTargetCents = distributeUnits(targetTotalCents / unit, priceCents).map(
-      (units) => units * unit
-    );
+    // `roundWhole` only affects display; the split and handoff stay exact.
+    const targetTotalCents = totalCents === null ? subtotalCents : totalCents;
+    const itemTargetCents = distributeUnits(targetTotalCents, priceCents);
     const totalsCents = {};
 
     const rows = priceCents.map((price, index) => {
@@ -146,20 +149,20 @@
         Math.max(1, Math.round(Number(weight) || 1)),
       ]);
       const allocations = distributeUnits(
-        itemTargetCents[index] / unit,
+        itemTargetCents[index],
         entries.map(([, weight]) => weight),
         index
       );
 
       const row = {
         index,
-        price: fromMinor(roundToUnit(price, unit)),
+        price: fromMinor(price),
         priceWithFee: fromMinor(itemTargetCents[index]),
         shares: {},
       };
 
       entries.forEach(([person], item) => {
-        const cents = allocations[item] * unit;
+        const cents = allocations[item];
         row.shares[person] = fromMinor(cents);
         totalsCents[person] = (totalsCents[person] || 0) + cents;
       });
@@ -176,7 +179,7 @@
         people: Object.keys(totalsCents).sort(),
         feePercent: Math.round(fee * 1000) / 10,
         items: rows,
-        subtotal: fromMinor(roundToUnit(subtotalCents, unit)),
+        subtotal: fromMinor(subtotalCents),
         total: fromMinor(targetTotalCents),
         totals,
       },
@@ -293,6 +296,11 @@
   if (typeof module === 'object' && module.exports) module.exports = spill;
   if (typeof document === 'undefined') return;
 
+  // Must run before Alpine initializes $persist.
+  if (repairStoredJson(STORAGE.roundWhole, (value) => typeof value === 'boolean')) {
+    toast.error('Settings were unreadable and reset.');
+  }
+
   /* ------------------------------------------------------------------ */
   /* Component                                                         */
   /* ------------------------------------------------------------------ */
@@ -307,6 +315,7 @@
         shares: [],
         error: null,
         bill: null,
+        scanning: false,
         roundWhole: this.$persist(true).as(STORAGE.roundWhole),
 
         // Derived state
@@ -338,7 +347,7 @@
 
         get warning() {
           const skipped = this.parsedItems.skipped;
-          return skipped ? `${skipped} line${skipped === 1 ? '' : 's'} skipped: no valid amount found.` : null;
+          return skipped ? `${skipped} line${skipped === 1 ? '' : 's'} skipped: no amount found.` : null;
         },
 
         /* ---------------------------- Setup --------------------------- */
@@ -447,7 +456,8 @@
           input.value = '';
           if (!file) return;
 
-          toast.success('Processing, please wait...');
+          this.scanning = true;
+          toast.success('Scanning receipt...');
 
           const image = new Image();
           image.onload = async () => {
@@ -462,23 +472,26 @@
               const data = await response.json();
               if (!data || !data.total || !data.items) throw new Error();
 
-              this.totalPaid = `${this.roundAmount(data.total)}`;
+              this.totalPaid = `${this.exactAmount(data.total)}`;
               this.itemText = data.items
                 .map((item) => {
-                  const amount = this.roundAmount(item.amount);
+                  const amount = this.exactAmount(item.amount);
                   const name = (item.name || '').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
                   return name ? `${amount} - ${name}` : `${amount}`;
                 })
                 .join('\n');
               this.shares = [];
-              toast.success('Data extracted, please verify!');
+              toast.success('Receipt scanned. Check the amounts.');
             } catch {
-              toast.error('Failed to extract data!');
+              toast.error("Couldn't read the receipt.");
+            } finally {
+              this.scanning = false;
             }
           };
           image.onerror = () => {
             URL.revokeObjectURL(image.src);
-            toast.error('Failed to load image!');
+            this.scanning = false;
+            toast.error("Couldn't load the image.");
           };
           image.src = URL.createObjectURL(file);
         },
@@ -487,7 +500,7 @@
 
         async copyBillSummary() {
           if (!this.bill?.people?.length) {
-            toast.error('Bill is invalid!');
+            toast.error('Complete the bill first.');
             return;
           }
 
@@ -498,18 +511,18 @@
           });
 
           const copied = await copyToClipboard(summary);
-          copied ? toast.success('Split summary copied!') : toast.error('Cannot access clipboard!');
+          copied ? toast.success('Summary copied.') : toast.error('Clipboard unavailable.');
         },
 
         async copyShareLink() {
           if (!this.bill?.people?.length) {
-            toast.error('Bill is invalid!');
+            toast.error('Complete the bill first.');
             return;
           }
 
           flushUrlState();
           const copied = await copyToClipboard(location.href);
-          copied ? toast.success('Shareable link copied!') : toast.error('Cannot access clipboard!');
+          copied ? toast.success('Link copied.') : toast.error('Clipboard unavailable.');
         },
 
         /* ------------------------ Settle handoff ---------------------- */
@@ -524,11 +537,17 @@
             window.location.href = '/settle/';
             return;
           }
-          if (bill.people.length > CONFIG.maxSettlePeople) {
-            toast.error(`Keep it to ${CONFIG.maxSettlePeople} people to settle.`);
+          if (bill.people.length > MAX_SETTLE_PEOPLE) {
+            toast.error(`Settle supports up to ${MAX_SETTLE_PEOPLE} people.`);
             return;
           }
-          if (!confirm('Save the current bill for future settlement?')) return;
+
+          const totalMinor = toMinor(bill.total);
+          if (!Number.isSafeInteger(totalMinor) || totalMinor <= 0) {
+            toast.error('Add a total before settling.');
+            return;
+          }
+          if (!confirm('Send this bill to settlement?')) return;
 
           const params = new URLSearchParams({
             from: 'split',
@@ -542,12 +561,20 @@
 
         /* --------------------------- Formatting ----------------------- */
 
-        roundAmount(value) {
-          return roundAmount(value, this.roundWhole);
+        // Scanned values keep their cents; Whole numbers only affects display.
+        exactAmount(value) {
+          const cents = toMinor(value);
+          return Number.isFinite(cents) ? fromMinor(cents) : 0;
         },
 
         formatAmount(value, decimals = null) {
           return formatAmount(value, this.roundWhole, decimals);
+        },
+
+        // The fee is stored with one decimal; keep it instead of rounding 12.5%
+        // to 13% in the header.
+        formatFee(value) {
+          return this.formatAmount(value, 1).replace(/\.0$/, '');
         },
       };
     });

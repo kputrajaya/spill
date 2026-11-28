@@ -42,23 +42,22 @@
       <div class="section-head">
         <span class="section-title">Balances</span>
         <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-          <button class="btn btn-quiet btn-sm" type="button" @click="openSettings()">
-            Edit people
+          <button class="btn btn-quiet btn-sm" type="button" @click="openPeople()">
+            People
           </button>
-          <button class="btn btn-quiet btn-sm" type="button" title="Copy a link that syncs this ledger across devices"
-            @click="copySyncLink()">
-            Copy sync link
+          <button class="btn btn-quiet btn-sm" type="button" @click="openLedgers()">
+            Ledgers
           </button>
         </div>
       </div>
 
-      <div class="table-wrap">
-        <table class="tbl">
+      <div class="table-wrap" x-show="state.people.length">
+        <table class="tbl tbl-balances">
           <thead>
             <tr>
               <th scope="col" class="t-start"><span class="visually-hidden">Metric</span></th>
               <template x-for="row in balanceRows" :key="row.id">
-                <th scope="col" x-text="row.name"></th>
+                <th scope="col" class="t-person" x-text="row.name"></th>
               </template>
             </tr>
           </thead>
@@ -86,10 +85,14 @@
         </table>
       </div>
 
+      <p class="help mb-0" x-show="state.people.length < 2">
+        Add at least two people to start.
+      </p>
+
       <div class="input-footer">
         <div class="form-check form-switch m-0">
           <input class="form-check-input" type="checkbox" id="settleRoundWholeInput" x-model="roundWhole" />
-          <label class="form-check-label help" for="settleRoundWholeInput">Round numbers</label>
+          <label class="form-check-label help" for="settleRoundWholeInput">Whole numbers</label>
         </div>
       </div>
     </section>
@@ -98,13 +101,18 @@
     <section class="surface">
       <div class="section-head">
         <span class="section-title">Settlement</span>
-        <button class="btn btn-quiet btn-sm" type="button" x-show="transfers.length" @click="copySettlement">
-          Copy summary
-        </button>
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+          <button class="btn btn-quiet btn-sm" type="button" x-show="transfers.length" @click="settleAll">
+            Settle all
+          </button>
+          <button class="btn btn-quiet btn-sm" type="button" x-show="transfers.length" @click="copySettlement">
+            Copy summary
+          </button>
+        </div>
       </div>
 
       <p class="help mb-0" x-show="!transfers.length" role="status" aria-live="polite">
-        No settlement needed
+        No settlement needed.
       </p>
 
       <div class="table-wrap" x-show="transfers.length">
@@ -124,9 +132,9 @@
                 <td class="t-start" x-text="transfer.to"></td>
                 <td x-text="formatAmount(transfer.amount)"></td>
                 <td>
-                  <button type="button" class="btn-x" title="Settle this balance" aria-label="Settle this balance"
+                  <button type="button" class="btn btn-quiet btn-sm" title="Settle this balance"
                     @click="closeTransfer(transfer)">
-                    &times;
+                    Settle
                   </button>
                 </td>
               </tr>
@@ -150,18 +158,21 @@
 
       <p class="help help-warn mt-2 mb-2" x-show="transactionWarning" x-text="transactionWarning" role="status"></p>
 
-      <p class="help mb-0" x-show="!state.transactions.length">
-        No transactions yet; add one below
+      <p class="help mb-0" x-show="!state.transactions.length && state.people.length >= 2">
+        No transactions yet.
+      </p>
+      <p class="help mb-0" x-show="state.people.length < 2">
+        Add people first.
       </p>
 
       <div class="table-wrap" x-show="state.transactions.length">
-        <table class="tbl">
+        <table class="tbl tbl-transactions">
           <thead>
             <tr>
-              <th scope="col" class="t-start">Name</th>
+              <th scope="col" class="t-start">Label</th>
               <th scope="col">Total</th>
               <template x-for="person in state.people" :key="person.id">
-                <th scope="col" x-text="person.name"></th>
+                <th scope="col" class="t-person" x-text="person.name"></th>
               </template>
               <th scope="col" class="t-center"><span class="visually-hidden">Actions</span></th>
             </tr>
@@ -195,12 +206,14 @@
 
       <!-- Add / edit form -->
       <template x-if="formOpen">
-        <div class="txn-sheet">
+        <div class="txn-sheet" role="dialog" aria-label="Add or edit transaction"
+          @keydown.escape.stop="cancelForm()">
           <div class="txn-sheet-body">
             <div class="field-block">
               <label class="field-label" for="txnAmount">Amount</label>
-              <input id="txnAmount" class="form-control" type="text" inputmode="decimal" autocomplete="off"
-                placeholder="100000" x-model="form.amount" @input="form.error = null" :aria-invalid="!!form.error" />
+              <input id="txnAmount" x-ref="amountInput" class="form-control" type="text" inputmode="decimal"
+                autocomplete="off" placeholder="100000" x-model="form.amount" @input="form.error = null"
+                :aria-invalid="!!form.error" />
               <p class="help help-warn mt-2 mb-0" x-show="form.amount && !(formAmountMinor > 0)" role="alert">
                 Enter a valid amount.
               </p>
@@ -218,7 +231,7 @@
               </div>
 
               <div class="col-12 col-sm-6 field-block">
-                <label class="field-label" for="txnName">Transaction name (optional)</label>
+                <label class="field-label" for="txnName">Label</label>
                 <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
                   x-model="form.name" @input="form.error = null" />
               </div>
@@ -227,13 +240,13 @@
             <div class="field-block">
               <span class="field-label">How to split</span>
               <div class="mode-row" role="group" aria-label="How to split the amount">
-                <button type="button" class="chip" :class="{ 'is-on': form.mode === 'owed' }"
-                  :aria-pressed="form.mode === 'owed'" @click="setMode('owed')">
-                  To non-payers
-                </button>
                 <button type="button" class="chip" :class="{ 'is-on': form.mode === 'equal' }"
                   :aria-pressed="form.mode === 'equal'" @click="setMode('equal')">
                   To everyone
+                </button>
+                <button type="button" class="chip" :class="{ 'is-on': form.mode === 'owed' }"
+                  :aria-pressed="form.mode === 'owed'" @click="setMode('owed')">
+                  To non-payers
                 </button>
                 <button type="button" class="chip" :class="{ 'is-on': form.mode === 'manual' }"
                   :aria-pressed="form.mode === 'manual'" @click="setMode('manual')">
@@ -249,7 +262,7 @@
                   <div class="manual-row">
                     <label class="manual-name" :for="`manual-${person.id}`">
                       <span x-text="person.name"></span>
-                      <span class="split-note" x-show="person.id === form.payerId">own share</span>
+                      <span class="split-note" x-show="person.id === form.payerId">(own share)</span>
                     </label>
                     <input :id="`manual-${person.id}`" class="form-control" type="text" inputmode="decimal"
                       placeholder="0" x-model="form.manual[person.id]" @input="form.error = null" />
@@ -264,9 +277,8 @@
               <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
                 aria-live="polite"></span>
               <div class="form-action-buttons">
-                <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()">
-                  Save
-                </button>
+                <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
+                  x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
                 <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
               </div>
             </div>
@@ -274,22 +286,22 @@
         </div>
       </template>
 
-      <template x-if="!formOpen">
+      <template x-if="!formOpen && canAddTransaction">
         <div class="add-float">
           <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
         </div>
       </template>
     </section>
 
-    <!-- People settings -->
-    <dialog class="settle-dialog" x-ref="settingsDialog" aria-labelledby="settingsTitle" @click.self="closeSettings()"
-      @cancel.prevent="closeSettings()">
+    <!-- People -->
+    <dialog class="settle-dialog" x-ref="peopleDialog" aria-label="People" @click.self="cancelPeople()"
+      @cancel.prevent="cancelPeople()">
       <div class="dialog-body">
         <div class="section-head">
-          <span class="section-title" id="settingsTitle">Edit people</span>
+          <span class="section-title">People</span>
         </div>
 
-        <p class="help">These names are used for new and existing transactions.</p>
+        <p class="help">Used for all transactions in this ledger.</p>
 
         <div class="settings-list">
           <template x-for="person in settingsDraft" :key="person.id">
@@ -310,6 +322,63 @@
         </div>
 
         <p class="help help-warn mt-3 mb-0" x-show="settingsError" x-text="settingsError" role="alert"></p>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button class="btn btn-quiet" type="button" @click="cancelPeople()">Cancel</button>
+          <button class="btn btn-accent" type="button" @click="closePeople()">Save</button>
+        </div>
+
+        <div class="toast-stack" data-toast-stack role="status" aria-live="polite" aria-atomic="true"></div>
+      </div>
+    </dialog>
+
+    <!-- Ledgers -->
+    <dialog class="settle-dialog" x-ref="ledgerDialog" aria-label="Ledgers" @click.self="cancelLedgers()"
+      @cancel.prevent="cancelLedgers()">
+      <div class="dialog-body">
+        <div class="section-head">
+          <span class="section-title">Ledgers</span>
+        </div>
+
+        <p class="help">
+          Each ledger has its own people and transactions. Share it across devices, or duplicate it to branch off.
+        </p>
+
+        <div class="settings-list">
+          <template x-for="ledger in settingsLedgers" :key="ledger.key">
+            <div class="settings-row">
+              <label class="ledger-choice">
+                <input type="radio" name="ledger" :value="ledger.key" x-model="settingsLedgerKey" />
+                <span x-text="ledgerId(ledger.key)"></span>
+                <span class="ledger-count" x-text="ledgerCountLabel(ledger.count)"></span>
+              </label>
+              <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-quiet btn-sm" type="button" title="Share link"
+                  @click="copySyncLink(ledger.key)">
+                  Share
+                </button>
+                <button class="btn-x" type="button" title="Delete ledger" aria-label="Delete ledger"
+                  @click="removeDraftLedger(ledger.key)">
+                  &times;
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <button class="btn btn-quiet" type="button" @click="addDraftLedger(false)">Add new ledger</button>
+          <button class="btn btn-quiet" type="button" @click="addDraftLedger(true)">Duplicate ledger</button>
+        </div>
+
+        <p class="help help-warn mt-2 mb-0" x-show="ledgerError" x-text="ledgerError" role="alert"></p>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button class="btn btn-quiet" type="button" @click="cancelLedgers()">Cancel</button>
+          <button class="btn btn-accent" type="button" @click="closeLedgers()">Save</button>
+        </div>
+
+        <div class="toast-stack" data-toast-stack role="status" aria-live="polite" aria-atomic="true"></div>
       </div>
     </dialog>
   </div>

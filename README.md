@@ -3,7 +3,7 @@
 Simple bill splitter that cares about your time.
 
 - `/` splits a bill between people and sends it to settlement.
-- `/settle/` keeps a local transaction ledger and shows who pays whom. It can also sync that ledger across devices with a shared `?k=` key.
+- `/settle/` keeps local transaction ledgers and shows who pays whom. Up to 10 ledgers can be switched in the Ledgers dialog; each keeps its own people and transactions and has its own `?k=` key for cross-device sync. A new ledger can be blank or duplicate the current one to branch off. Ledgers are identified by the first 6 chars of that key, shown uppercase.
 
 ## Local sync
 

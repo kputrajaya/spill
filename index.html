@@ -34,13 +34,16 @@
         <button class="btn btn-quiet btn-sm" type="button" @click="sendToSettle">Settle bills &rarr;</button>
       </div>
     </header>
-    <input x-ref="receiptInput" type="file" accept="image/*,text/plain" hidden @change="scanReceipt($event)" />
+    <input x-ref="receiptInput" type="file" accept="image/*" hidden @change="scanReceipt($event)" />
 
     <!-- Input -->
     <section class="surface">
       <div class="section-head">
         <span class="section-title">Input</span>
-        <button class="btn btn-accent btn-sm" type="button" @click="$refs.receiptInput.click()">Scan receipt</button>
+        <button class="btn btn-accent btn-sm" type="button" :disabled="scanning"
+          @click="$refs.receiptInput.click()">
+          <span x-text="scanning ? 'Scanning...' : 'Scan receipt'"></span>
+        </button>
       </div>
 
       <div class="field-block">
@@ -90,7 +93,7 @@
 
       <div class="field-block">
         <label class="field-label" for="totalInput">
-          Total amount (optional)
+          Total
         </label>
         <input id="totalInput" class="form-control" type="text" inputmode="decimal" autocomplete="off"
           placeholder="55000" x-model="totalPaid" :aria-invalid="!!error"
@@ -101,7 +104,7 @@
       <div class="input-footer">
         <div class="form-check form-switch m-0">
           <input class="form-check-input" type="checkbox" id="roundWholeInput" x-model="roundWhole" />
-          <label class="form-check-label help" for="roundWholeInput">Round numbers</label>
+          <label class="form-check-label help" for="roundWholeInput">Whole numbers</label>
         </div>
       </div>
     </section>
@@ -117,7 +120,7 @@
       </div>
 
       <template x-if="!bill">
-        <p class="help mb-0">Fill in the inputs correctly to view the result</p>
+        <p class="help mb-0">Add prices and people to see the split.</p>
       </template>
 
       <template x-if="bill">
@@ -128,7 +131,7 @@
                 <th scope="col" class="t-start">No</th>
                 <th scope="col">Price</th>
                 <th scope="col">
-                  W.&nbsp;fee&nbsp;(<span x-text="formatAmount(bill.feePercent, 0)"></span>%)
+                  W.&nbsp;fee&nbsp;(<span x-text="formatFee(bill.feePercent)"></span>%)
                 </th>
                 <template x-for="person in bill.people" :key="person">
                   <th scope="col" x-text="person"></th>

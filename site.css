@@ -227,6 +227,10 @@ textarea.form-control.list-input {
   font-size: 0.74rem;
   padding: 0.3rem 0.65rem;
 }
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .btn:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
