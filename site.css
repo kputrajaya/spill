@@ -95,7 +95,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.8rem;
 }
 .page-head h1 {
   font-size: 1.3rem;
@@ -107,7 +107,7 @@ body {
 .page-title {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.7rem;
   min-width: 0;
 }
 .page-title-text {
