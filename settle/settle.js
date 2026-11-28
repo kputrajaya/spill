@@ -699,7 +699,6 @@
         settingsLedgerKey: '',
         ledgerError: '',
         ledgers: [],
-        newName: '',
         syncKey: '',
         syncReady: false,
         syncReadyTimer: null,
@@ -1149,9 +1148,6 @@
             error: null,
           };
           this.formOpen = true;
-          // Only a fresh manual add starts at the amount; edits and handoffs
-          // already carry values, and focusing would pop the mobile keyboard.
-          if (!overrides) this.$nextTick(() => this.$refs.amountInput?.focus());
         },
 
         cancelForm() {
@@ -1389,8 +1385,11 @@
           }));
           this.settingsDraft = this.state.people.map((person) => ({ ...person }));
           this.settingsError = '';
-          this.newName = '';
-          this.$nextTick(() => this.$refs.peopleDialog?.showModal());
+          this.$nextTick(() => {
+            const dialog = this.$refs.peopleDialog;
+            dialog?.showModal();
+            dialog?.focus();
+          });
         },
 
         closePeople() {
@@ -1398,7 +1397,6 @@
           this.settingsBase = [];
           this.settingsDraft = [];
           this.settingsError = '';
-          this.newName = '';
           this.$refs.peopleDialog?.close();
         },
 
@@ -1406,7 +1404,6 @@
           this.settingsBase = [];
           this.settingsDraft = [];
           this.settingsError = '';
-          this.newName = '';
           this.$refs.peopleDialog?.close();
         },
 
@@ -1682,23 +1679,19 @@
         },
 
         addDraftPerson() {
-          const name = cleanPersonName(this.newName);
-          if (!name) {
-            this.settingsError = 'Enter a name.';
-            return;
-          }
           if (this.settingsDraft.length >= MAX_PEOPLE) {
             this.settingsError = `Limit: ${MAX_PEOPLE} people.`;
             return;
           }
-          if (this.settingsDraft.some((person) => nameKey(person.name) === nameKey(name))) {
-            this.settingsError = 'That name is already in the list.';
-            return;
-          }
 
-          this.settingsDraft.push({ id: newId('p'), name });
-          this.newName = '';
+          this.settingsDraft.push({ id: newId('p'), name: '' });
           this.settingsError = '';
+          this.$nextTick(() => {
+            const inputs = this.$refs.peopleDialog?.querySelectorAll(
+              'input[aria-label="Person name"]'
+            );
+            inputs?.[inputs.length - 1]?.focus();
+          });
         },
 
         removeDraftPerson(person) {

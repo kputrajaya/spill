@@ -71,11 +71,14 @@
   left: 50%;
   bottom: 0;
   z-index: 900;
+  display: flex;
+  flex-direction: column;
   width: min(928px, calc(100% - 2rem));
-  min-height: min(50vh, 720px);
-  min-height: min(50dvh, 720px);
-  max-height: min(85vh, 720px);
-  overflow-y: auto;
+  min-height: 75vh;
+  min-height: 75dvh;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow: hidden;
   overscroll-behavior: contain;
   transform: translateX(-50%);
   background: var(--surface);
@@ -101,7 +104,11 @@
 }
 
 .txn-sheet-body {
-  padding: 0.9rem 1.05rem calc(1rem + env(safe-area-inset-bottom));
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.9rem 1.05rem;
 }
 
 .txn-sheet-body .field-block {
@@ -115,16 +122,24 @@
 
 .form-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-top: 1rem;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .form-action-buttons {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-left: auto;
+  width: 100%;
+}
+
+.form-action-buttons .btn {
+  width: 100%;
 }
 
 .form-inline-error {
@@ -171,7 +186,7 @@
 
 .manual-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 8rem;
+  grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 25%);
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.5rem 0.4rem 0.65rem;
@@ -238,6 +253,17 @@
   padding: 1rem 1.05rem 1.1rem;
 }
 
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-left: -1.05rem;
+  margin-right: -1.05rem;
+  padding: 0.85rem 1.05rem 0;
+  border-top: 1px solid var(--line);
+}
+
 /* Keep dialog feedback inside the dialog instead of the page bottom. */
 .settle-dialog .toast-stack {
   position: sticky;
@@ -288,15 +314,7 @@
 }
 
 .settings-add {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.5rem;
+  display: flex;
+  justify-content: flex-start;
   margin-top: 0.8rem;
-}
-
-@media (max-width: 575.98px) {
-  .manual-row {
-    grid-template-columns: minmax(0, 1fr) 6.5rem;
-  }
 }

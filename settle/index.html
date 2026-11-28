@@ -205,7 +205,7 @@
       </div>
 
       <!-- Add / edit form -->
-      <div class="txn-backdrop" x-show="formOpen" x-cloak aria-hidden="true"></div>
+      <div class="txn-backdrop" x-show="formOpen" x-cloak @click="cancelForm()" aria-hidden="true"></div>
       <template x-if="formOpen">
         <div class="txn-sheet" role="dialog" aria-modal="true" aria-label="Add or edit transaction"
           @keydown.escape.stop="cancelForm()">
@@ -214,28 +214,26 @@
               <label class="field-label" for="txnAmount">Amount</label>
               <input id="txnAmount" x-ref="amountInput" class="form-control" type="text" inputmode="decimal"
                 autocomplete="off" placeholder="100000" x-model="form.amount" @input="form.error = null"
-                :aria-invalid="!!form.error" />
+                x-init="form.id === null && !form.syncPending && $el.focus()" :aria-invalid="!!form.error" />
               <p class="help help-warn mt-2 mb-0" x-show="form.amount && !(formAmountMinor > 0)" role="alert">
                 Enter a valid amount.
               </p>
             </div>
 
-            <div class="row g-2">
-              <div class="col-12 col-sm-6 field-block">
-                <label class="field-label" for="txnPayer">Who paid?</label>
-                <select id="txnPayer" class="form-select" x-model="form.payerId" @change="form.error = null">
-                  <option value="" disabled hidden>Pick someone</option>
-                  <template x-for="person in formPayerOptions" :key="person.id">
-                    <option :value="person.id" x-text="person.name"></option>
-                  </template>
-                </select>
-              </div>
+            <div class="field-block">
+              <label class="field-label" for="txnPayer">Who paid?</label>
+              <select id="txnPayer" class="form-select" x-model="form.payerId" @change="form.error = null">
+                <option value="" disabled hidden>Pick someone</option>
+                <template x-for="person in formPayerOptions" :key="person.id">
+                  <option :value="person.id" x-text="person.name"></option>
+                </template>
+              </select>
+            </div>
 
-              <div class="col-12 col-sm-6 field-block">
-                <label class="field-label" for="txnName">Label</label>
-                <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
-                  x-model="form.name" @input="form.error = null" />
-              </div>
+            <div class="field-block">
+              <label class="field-label" for="txnName">Label (optional)</label>
+              <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
+                x-model="form.name" @input="form.error = null" />
             </div>
 
             <div class="field-block">
@@ -273,15 +271,15 @@
             </div>
 
             <p class="help help-warn mt-3 mb-0" x-show="form.error" x-text="form.error" role="alert"></p>
+          </div>
 
-            <div class="form-actions">
-              <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
-                aria-live="polite"></span>
-              <div class="form-action-buttons">
-                <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
-                  x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
-                <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
-              </div>
+          <div class="form-actions">
+            <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
+              aria-live="polite"></span>
+            <div class="form-action-buttons">
+              <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
+                x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
+              <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
             </div>
           </div>
         </div>
@@ -295,7 +293,7 @@
     </section>
 
     <!-- People -->
-    <dialog class="settle-dialog" x-ref="peopleDialog" aria-label="People" @click.self="cancelPeople()"
+    <dialog class="settle-dialog" x-ref="peopleDialog" aria-label="People" tabindex="-1" @click.self="cancelPeople()"
       @cancel.prevent="cancelPeople()">
       <div class="dialog-body">
         <div class="section-head">
@@ -317,14 +315,12 @@
         </div>
 
         <div class="settings-add">
-          <input class="form-control" type="text" maxlength="24" placeholder="Add person" x-model="newName"
-            @keydown.enter.prevent="addDraftPerson()" />
-          <button class="btn btn-quiet" type="button" @click="addDraftPerson()">Add</button>
+          <button class="btn btn-quiet btn-sm" type="button" @click="addDraftPerson()">Add person</button>
         </div>
 
         <p class="help help-warn mt-3 mb-0" x-show="settingsError" x-text="settingsError" role="alert"></p>
 
-        <div class="d-flex justify-content-end gap-2 mt-3">
+        <div class="dialog-actions">
           <button class="btn btn-quiet" type="button" @click="cancelPeople()">Cancel</button>
           <button class="btn btn-accent" type="button" @click="closePeople()">Save</button>
         </div>
@@ -368,13 +364,13 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <button class="btn btn-quiet" type="button" @click="addDraftLedger(false)">Add new ledger</button>
-          <button class="btn btn-quiet" type="button" @click="addDraftLedger(true)">Duplicate ledger</button>
+          <button class="btn btn-quiet btn-sm" type="button" @click="addDraftLedger(false)">Add new ledger</button>
+          <button class="btn btn-quiet btn-sm" type="button" @click="addDraftLedger(true)">Duplicate ledger</button>
         </div>
 
         <p class="help help-warn mt-2 mb-0" x-show="ledgerError" x-text="ledgerError" role="alert"></p>
 
-        <div class="d-flex justify-content-end gap-2 mt-3">
+        <div class="dialog-actions">
           <button class="btn btn-quiet" type="button" @click="cancelLedgers()">Cancel</button>
           <button class="btn btn-accent" type="button" @click="closeLedgers()">Save</button>
         </div>

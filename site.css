@@ -17,7 +17,6 @@
   --focus-ring: rgba(17, 17, 17, 0.07);
   --quiet-bg: #efefef;
   --quiet-bg-hover: #e2e2e2;
-  --row-hover: #fafafa;
   --x-hover-bg: var(--ink);
   --x-hover-ink: #ffffff;
   --warn-bg: #fdecea;
@@ -407,9 +406,6 @@ textarea.form-control.list-input {
   letter-spacing: 0.07em;
   font-weight: 700;
   color: var(--muted);
-}
-.tbl tbody tr:hover td {
-  background: var(--row-hover);
 }
 /* The rule above the totals row matches the header rule */
 .tbl tbody tr:last-child td,
