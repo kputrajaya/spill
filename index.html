@@ -31,7 +31,7 @@
     <header class="page-head flex-wrap">
       <h1>&#128176; Split Bill</h1>
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-        <a class="nav-link" href="/settle/">Open Settle &rarr;</a>
+        <a class="nav-link" href="/settle/">Go to Settle &rarr;</a>
       </div>
     </header>
     <input x-ref="receiptInput" type="file" accept="image/*" hidden @change="scanReceipt($event)" />
@@ -115,7 +115,7 @@
         <span class="section-title">Result</span>
         <template x-if="bill">
           <div class="d-flex flex-wrap justify-content-end gap-2">
-            <button class="btn btn-quiet btn-sm" type="button" @click="settleInNewTab">Send to settle</button>
+            <button class="btn btn-quiet btn-sm" type="button" @click="settleInNewTab">Send to Settle</button>
             <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
           </div>
         </template>

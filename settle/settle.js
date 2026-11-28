@@ -847,10 +847,7 @@
         /* ---------------------------- Setup --------------------------- */
 
         init() {
-          window.addEventListener('resize', () => {
-            this.syncViewport();
-            this.$nextTick(() => this.alignBottomUi());
-          });
+          window.addEventListener('resize', () => this.syncViewport());
           window.visualViewport?.addEventListener('resize', () => this.syncViewport());
           window.visualViewport?.addEventListener('scroll', () => this.syncViewport());
           this.syncViewport();
@@ -893,11 +890,7 @@
           this.lastPublishedRev = this.state.rev;
           this.freshJoin = ledger.fresh;
           this.$watch('state', () => this.persistLedger());
-          this.$watch('state.people.length', () =>
-            this.$nextTick(() => this.alignBottomUi())
-          );
           this.persistLedger();
-          this.$nextTick(() => this.alignBottomUi());
 
           if (loaded.repaired) {
             toast.error('Saved data was unreadable; recovered what we could (backup kept).');
@@ -1161,9 +1154,8 @@
           };
           this.formOpen = true;
           this.$nextTick(() => {
-            this.alignBottomUi();
-            const sheet = this.$refs.txnSheet;
-            if (sheet && !sheet.open) sheet.showModal();
+            const dialog = this.$refs.txnDialog;
+            if (dialog && !dialog.open) dialog.showModal();
           });
         },
 
@@ -1171,42 +1163,19 @@
           // Dismissing the provisional handoff editor abandons the link too;
           // otherwise the pending sync would reopen the same form.
           const pendingHandoff = this.form?.syncPending;
-          const sheet = this.$refs.txnSheet;
-          if (sheet?.open) sheet.close();
+          const dialog = this.$refs.txnDialog;
+          if (dialog?.open) dialog.close();
           this.formOpen = false;
           this.form = null;
           if (pendingHandoff) clearHandoffParams();
-          this.$nextTick(() => this.alignBottomUi());
-        },
-
-        alignBottomUi() {
-          const card = document.querySelector('.surface');
-          if (!card) return;
-          const rect = card.getBoundingClientRect();
-
-          [this.$refs.txnSheet, this.$refs.addFloat].forEach((el) => {
-            if (!el) return;
-            el.style.left = `${rect.left}px`;
-            el.style.width = `${rect.width}px`;
-            el.style.right = 'auto';
-            el.style.margin = '0';
-            el.style.transform = 'none';
-          });
         },
 
         syncViewport() {
           const vv = window.visualViewport;
           const height = Math.round(vv ? vv.height : window.innerHeight);
-          const layoutHeight = document.documentElement.clientHeight || window.innerHeight;
-          const offsetTop = vv ? vv.offsetTop : 0;
-          const inset = Math.max(0, Math.round(layoutHeight - height - offsetTop));
           document.documentElement.style.setProperty(
             '--app-viewport-height',
             `${height}px`
-          );
-          document.documentElement.style.setProperty(
-            '--app-bottom-inset',
-            `${inset}px`
           );
         },
 
@@ -1733,7 +1702,6 @@
           }
 
           this.settingsError = '';
-          this.$nextTick(() => this.alignBottomUi());
           return true;
         },
 

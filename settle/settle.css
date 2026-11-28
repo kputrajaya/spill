@@ -19,14 +19,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.page.has-sheet {
-  padding-bottom: min(calc(var(--app-viewport-height, 100%) * 0.85), 720px);
-}
-
-.page.has-add {
-  padding-bottom: 3.875rem;
-}
-
 :root {
   --positive-bg: #e4f5e9;
   --negative-bg: #fde8e8;
@@ -83,64 +75,9 @@ body {
   vertical-align: 1px;
 }
 
-.txn-sheet {
-  position: fixed;
-  top: auto;
-  right: 0;
-  bottom: var(--app-bottom-inset, 0px);
-  left: 0;
-  z-index: 900;
-  flex-direction: column;
-  width: min(928px, calc(100% - 2rem));
-  height: calc(var(--app-viewport-height, 100%) * 0.8);
-  max-width: none;
-  max-height: none;
-  margin: 0 auto;
-  padding: 0;
-  overflow: hidden;
-  overscroll-behavior: contain;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: var(--radius) var(--radius) 0 0;
-  box-shadow: 0 -14px 44px rgba(17, 17, 17, 0.2);
-}
-
-.txn-sheet[open] {
-  display: flex;
-}
-
-.txn-sheet::backdrop {
-  background: rgba(17, 17, 17, 0.35);
-}
-
-.add-float {
-  position: fixed;
-  top: auto;
-  right: 0;
-  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--app-bottom-inset, 0px));
-  left: 0;
-  z-index: 800;
-  width: min(928px, calc(100% - 2rem));
-  max-width: none;
-  max-height: none;
-  margin: 0 auto;
-  padding: 0;
-  color: inherit;
-  background: transparent;
-  border: 0;
-}
-
-.add-float .btn {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  box-shadow: 0 10px 26px rgba(17, 17, 17, 0.18);
-}
-
 /* Keep page toasts above the mobile home-indicator inset. */
 .toast-stack {
-  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--app-bottom-inset, 0px));
+  bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 575.98px) {
@@ -151,45 +88,6 @@ body {
     width: 0;
     height: 0;
   }
-}
-
-.txn-sheet-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0.9rem 1.05rem;
-}
-
-.txn-sheet-body .field-block {
-  margin-top: 0.85rem;
-}
-
-.txn-sheet-body > .field-block:first-child {
-  margin-top: 0;
-  margin-bottom: 0.85rem;
-}
-
-.form-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex-shrink: 0;
-  margin-top: 0;
-  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.form-action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.form-action-buttons .btn {
-  width: 100%;
 }
 
 .form-inline-error {
@@ -292,6 +190,11 @@ body {
 
 .settle-dialog::backdrop {
   background: rgba(17, 17, 17, 0.35);
+}
+
+.settle-dialog.txn-dialog {
+  width: min(640px, calc(100% - 2rem));
+  max-width: calc(100% - 2rem);
 }
 
 .dialog-body {

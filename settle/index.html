@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="color-scheme" content="light" />
   <title>Settle Bills</title>
@@ -29,11 +29,11 @@
 </head>
 
 <body x-data="settle" x-cloak>
-  <div class="container page" :class="{ 'has-sheet': formOpen, 'has-add': !formOpen }">
+  <div class="container page">
     <header class="page-head">
       <h1>&#129309; Settle Bills</h1>
       <div class="head-actions">
-        <a class="nav-link" href="/">Open Split &rarr;</a>
+        <a class="nav-link" href="/">Go to Split &rarr;</a>
       </div>
     </header>
 
@@ -152,6 +152,9 @@
           <button class="btn btn-quiet btn-sm" type="button" x-show="state.transactions.length"
             @click="clearTransactions()">
             Clear all
+          </button>
+          <button class="btn btn-accent btn-sm" type="button" x-show="canAddTransaction" @click="startAdd()">
+            Add new
           </button>
         </div>
       </div>
@@ -303,9 +306,14 @@
 
   <!-- Add / edit form -->
   <template x-if="formOpen">
-    <dialog class="txn-sheet" x-ref="txnSheet" x-init="$nextTick(() => alignBottomUi())"
-      aria-label="Add or edit transaction" @click.self="cancelForm()" @cancel.prevent="cancelForm()">
-      <div class="txn-sheet-body">
+    <dialog class="settle-dialog txn-dialog" x-ref="txnDialog" aria-labelledby="txnDialogTitle"
+      @click.self="cancelForm()" @cancel.prevent="cancelForm()">
+      <div class="dialog-body">
+        <div class="section-head">
+          <span class="section-title" id="txnDialogTitle"
+            x-text="form && form.id ? 'Edit transaction' : 'Add transaction'"></span>
+        </div>
+
         <div class="field-block">
           <label class="field-label" for="txnAmount">Amount</label>
           <input id="txnAmount" x-ref="amountInput" class="form-control" type="text" inputmode="decimal"
@@ -367,24 +375,17 @@
         </div>
 
         <p class="help help-warn mt-3 mb-0" x-show="form.error" x-text="form.error" role="alert"></p>
-      </div>
+        <p class="help form-inline-error mt-3 mb-0" x-show="formInlineError" x-text="formInlineError"
+          role="status" aria-live="polite"></p>
 
-      <div class="form-actions">
-        <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
-          aria-live="polite"></span>
-        <div class="form-action-buttons">
+        <div class="dialog-actions">
+          <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
           <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
             x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
-          <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
         </div>
       </div>
     </dialog>
   </template>
-
-  <div class="add-float" x-ref="addFloat" x-show="!formOpen && canAddTransaction" x-cloak
-    x-init="$nextTick(() => alignBottomUi())">
-    <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
-  </div>
 
   <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>
