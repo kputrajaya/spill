@@ -517,7 +517,7 @@
         /* ------------------------ Settle handoff ---------------------- */
 
         // The settle page reads these params once, then cleans its URL.
-        settleInNewTab() {
+        sendToSettle() {
           const bill = this.bill;
           if (!bill?.people?.length) {
             toast.error('Complete the bill first.');
@@ -545,7 +545,7 @@
             a: bill.people.map((person) => String(toMinor(bill.totals[person]))).join('|'),
           });
           flushUrlState();
-          window.open(`/settle/?${params.toString()}`, '_blank', 'noopener');
+          window.location.assign(`/settle/?${params.toString()}`);
         },
 
         /* --------------------------- Formatting ----------------------- */

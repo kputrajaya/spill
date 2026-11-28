@@ -66,7 +66,7 @@ Root state model:
 - Cached computed: `bill`.
 - Persisted: `spill:roundWhole` only.
 
-Root component methods to keep consistent when editing: `recalculate()`, `scheduleUrlSync()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `settleInNewTab()`, `copyBillSummary()`, `exactAmount()`, `formatAmount()`, `formatFee()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
+Root component methods to keep consistent when editing: `recalculate()`, `scheduleUrlSync()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `sendToSettle()`, `copyBillSummary()`, `exactAmount()`, `formatAmount()`, `formatFee()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
 
 Each settle ledger is persisted under `spill:settle:ledger:<key>`. The index under `spill:settle:index` stores `{ active, ledgers: [{ key, updatedAt }] }`; display rounding shares `spill:roundWhole` with the split page.
 
@@ -137,7 +137,7 @@ Each settle ledger is persisted under `spill:settle:ledger:<key>`. The index und
 - The `Whole numbers` switch (`roundWhole`) at the bottom of the Input card toggles between whole numbers and two decimal places for display only and shares its setting with the settle page. Calculations, URL state, and the handoff keep exact minor units; each displayed cell rounds independently (within 0.5 of exact).
 - The bill is encoded in URL query parameters so the split page can restore state from the URL: `t` (total amount), `i` (item prices, newline-separated, written as `|`), `p` (roster, `|`-separated), and `a` (per item, comma-separated `NAME` or `NAME+weight` tokens, items separated by `|`). New links are no longer offered; existing links remain readable.
 - Scanning a receipt fills the total and the price list as `amount - name` lines and clears assignments; it never touches the people field. The model preserves printed separators and `parseNumber()` normalizes them in the browser. The scan button is disabled and reads `Scanning...` until the request finishes or fails.
-- `Go to Settle` sits in the page header at the top right and is a static link to `/settle/`. The Result card's `Send to Settle` button opens the handoff in a new tab with the exact `bill.total` and each person's `bill.totals` in minor units; if the handoff is not applicable (no complete bill, fewer than two people, too many people, or no total) it shows an error toast and does not navigate. The header `Go to Settle` link opens settlement without a bill. A muted subtitle under the title reads `Split amounts in seconds.`
+- `Go to Settle` sits in the page header at the top right and is a static link to `/settle/`. The Result card's `Send to Settle` button opens the handoff in the same tab with the exact `bill.total` and each person's `bill.totals` in minor units; if the handoff is not applicable (no complete bill, fewer than two people, too many people, or no total) it shows an error toast and does not navigate. The header `Go to Settle` link opens settlement without a bill. A muted subtitle under the title reads `Split amounts in seconds.`
 
 ### Settle page
 
