@@ -32,6 +32,12 @@
 /* Base                                                                */
 /* ------------------------------------------------------------------ */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 * {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
@@ -466,6 +472,15 @@ textarea.form-control.list-input {
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 575.98px) {
+  html,
+  body {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
   .page {
     padding-top: 1.1rem;
   }

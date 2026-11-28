@@ -7,12 +7,13 @@
 }
 
 .page.has-add {
-  padding-bottom: 6rem;
+  padding-bottom: calc(3.875rem + var(--bottom-ui-inset));
 }
 
 :root {
   --positive-bg: #e4f5e9;
   --negative-bg: #fde8e8;
+  --bottom-ui-inset: 0px;
 }
 
 .tbl .t-strong.is-positive {
@@ -37,6 +38,13 @@
 
 .txn-row {
   cursor: pointer;
+}
+
+.txn-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
 }
 
 .txn-date {
@@ -91,7 +99,7 @@
 .add-float {
   position: fixed;
   left: 50%;
-  bottom: calc(1rem + env(safe-area-inset-bottom));
+  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
   z-index: 800;
   width: min(928px, calc(100% - 2rem));
   transform: translateX(-50%);
@@ -101,6 +109,18 @@
   width: 100%;
   padding: 0.7rem 1rem;
   box-shadow: 0 10px 26px rgba(17, 17, 17, 0.18);
+}
+
+/* Keep a single inset for the floating button, sheet actions, and toasts.
+   A host shell can override --bottom-ui-inset with its real bar height. */
+.toast-stack {
+  bottom: calc(1rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
+}
+
+@media (max-width: 575.98px) {
+  :root {
+    --bottom-ui-inset: 5rem;
+  }
 }
 
 .txn-sheet-body {
@@ -126,7 +146,7 @@
   gap: 0.5rem;
   flex-shrink: 0;
   margin-top: 0;
-  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom));
+  padding: 0.85rem 1.05rem calc(0.85rem + env(safe-area-inset-bottom) + var(--bottom-ui-inset));
   border-top: 1px solid var(--line);
   background: var(--surface);
 }

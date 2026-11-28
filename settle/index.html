@@ -33,7 +33,7 @@
     <header class="page-head">
       <h1>&#129309; Settle Bills</h1>
       <div class="head-actions">
-        <a class="nav-link" href="/">Split bill &rarr;</a>
+        <a class="nav-link" href="/">Open Split &rarr;</a>
       </div>
     </header>
 
@@ -55,7 +55,7 @@
         <table class="tbl tbl-balances">
           <thead>
             <tr>
-              <th scope="col" class="t-start"><span class="visually-hidden">Metric</span></th>
+              <th scope="col" class="t-start">Summary</th>
               <template x-for="row in balanceRows" :key="row.id">
                 <th scope="col" class="t-person" x-text="row.name"></th>
               </template>
@@ -193,10 +193,16 @@
                   </td>
                 </template>
                 <td class="t-center">
-                  <button type="button" class="btn-x" title="Delete this transaction"
-                    aria-label="Delete this transaction" @click.stop="deleteTransaction(transaction)">
-                    &times;
-                  </button>
+                  <div class="txn-actions">
+                    <button type="button" class="btn-x" title="Edit this transaction"
+                      aria-label="Edit this transaction" @click.stop="editTransaction(transaction)">
+                      &#9998;
+                    </button>
+                    <button type="button" class="btn-x" title="Delete this transaction"
+                      aria-label="Delete this transaction" @click.stop="deleteTransaction(transaction)">
+                      &times;
+                    </button>
+                  </div>
                 </td>
               </tr>
             </template>
