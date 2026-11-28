@@ -148,15 +148,9 @@
     <section class="surface">
       <div class="section-head">
         <span class="section-title">Transactions</span>
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-quiet btn-sm" type="button" x-show="state.transactions.length"
-            @click="clearTransactions()">
-            Clear all
-          </button>
-          <button class="btn btn-accent btn-sm" type="button" x-show="canAddTransaction" @click="startAdd()">
-            Add new
-          </button>
-        </div>
+        <button class="btn btn-accent btn-sm" type="button" x-show="canAddTransaction" @click="startAdd()">
+          Add new
+        </button>
       </div>
 
       <p class="help help-warn mt-2 mb-2" x-show="transactionWarning" x-text="transactionWarning" role="status"></p>

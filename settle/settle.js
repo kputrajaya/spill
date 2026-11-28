@@ -1734,19 +1734,6 @@
           this.settingsError = '';
         },
 
-        clearTransactions() {
-          if (!this.state.transactions.length) {
-            toast.error('No transactions to clear.');
-            return;
-          }
-          if (!confirm('Clear all transactions? This cannot be undone.')) return;
-
-          this.state.transactions = [];
-          this.touch();
-          if (this.formOpen) this.cancelForm();
-          toast.success('Transactions cleared.');
-        },
-
         /* ---------------------------- Output -------------------------- */
 
         async copySettlement() {
