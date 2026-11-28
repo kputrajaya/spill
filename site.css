@@ -101,10 +101,21 @@ body {
   font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  line-height: 1.2;
   margin: 0;
 }
 .page-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
   min-width: 0;
+}
+.page-title-text {
+  min-width: 0;
+}
+.page-mark {
+  font-size: 1.3rem;
+  line-height: 1.2;
 }
 .page-subtitle {
   margin: 0.2rem 0 0;
