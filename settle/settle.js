@@ -847,11 +847,6 @@
         /* ---------------------------- Setup --------------------------- */
 
         init() {
-          window.addEventListener('resize', () => this.syncViewport());
-          window.visualViewport?.addEventListener('resize', () => this.syncViewport());
-          window.visualViewport?.addEventListener('scroll', () => this.syncViewport());
-          this.syncViewport();
-
           const loaded = loadIndex();
           this.ledgers = loaded.index.ledgers;
 
@@ -1168,15 +1163,6 @@
           this.formOpen = false;
           this.form = null;
           if (pendingHandoff) clearHandoffParams();
-        },
-
-        syncViewport() {
-          const vv = window.visualViewport;
-          const height = Math.round(vv ? vv.height : window.innerHeight);
-          document.documentElement.style.setProperty(
-            '--app-viewport-height',
-            `${height}px`
-          );
         },
 
         previewFor(mode) {
