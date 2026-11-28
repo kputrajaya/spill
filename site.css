@@ -53,6 +53,8 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 body {
@@ -359,6 +361,7 @@ textarea.form-control.list-input {
   /* Long price lines scroll sideways instead of wrapping, keeping rows aligned */
   overflow-x: auto;
   scrollbar-width: thin;
+  touch-action: pan-x pan-y;
 }
 .items-assign {
   grid-column: 2;
@@ -376,6 +379,7 @@ textarea.form-control.list-input {
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  touch-action: pan-x pan-y;
 }
 
 .item-chips {
@@ -395,6 +399,7 @@ textarea.form-control.list-input {
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
 }
 
 .tbl {

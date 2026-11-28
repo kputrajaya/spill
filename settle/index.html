@@ -28,8 +28,8 @@
     crossorigin="anonymous"></script>
 </head>
 
-<body>
-  <div class="container page" x-data="settle" :class="{ 'has-sheet': formOpen, 'has-add': !formOpen }" x-cloak>
+<body x-data="settle" x-cloak>
+  <div class="container page" :class="{ 'has-sheet': formOpen, 'has-add': !formOpen }">
     <header class="page-head">
       <h1>&#129309; Settle Bills</h1>
       <div class="head-actions">
@@ -210,92 +210,7 @@
         </table>
       </div>
 
-      <!-- Add / edit form -->
-      <div class="txn-backdrop" x-show="formOpen" x-cloak @click="cancelForm()" aria-hidden="true"></div>
-      <template x-if="formOpen">
-        <div class="txn-sheet" x-ref="txnSheet" role="dialog" aria-modal="true" aria-label="Add or edit transaction"
-          @keydown.escape.stop="cancelForm()">
-          <div class="txn-sheet-body">
-            <div class="field-block">
-              <label class="field-label" for="txnAmount">Amount</label>
-              <input id="txnAmount" x-ref="amountInput" class="form-control" type="text" inputmode="decimal"
-                autocomplete="off" placeholder="100000" x-model="form.amount" @input="form.error = null"
-                x-init="form.id === null && !form.syncPending && $el.focus()" :aria-invalid="!!form.error" />
-              <p class="help help-warn mt-2 mb-0" x-show="form.amount && !(formAmountMinor > 0)" role="alert">
-                Enter a valid amount.
-              </p>
-            </div>
 
-            <div class="field-block">
-              <label class="field-label" for="txnPayer">Who paid?</label>
-              <select id="txnPayer" class="form-select" x-model="form.payerId" @change="form.error = null">
-                <option value="" disabled hidden>Pick someone</option>
-                <template x-for="person in formPayerOptions" :key="person.id">
-                  <option :value="person.id" x-text="person.name"></option>
-                </template>
-              </select>
-            </div>
-
-            <div class="field-block">
-              <label class="field-label" for="txnName">Label (optional)</label>
-              <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
-                x-model="form.name" @input="form.error = null" />
-            </div>
-
-            <div class="field-block">
-              <span class="field-label">How to split</span>
-              <div class="mode-row" role="group" aria-label="How to split the amount">
-                <button type="button" class="chip" :class="{ 'is-on': form.mode === 'equal' }"
-                  :aria-pressed="form.mode === 'equal'" @click="setMode('equal')">
-                  To everyone
-                </button>
-                <button type="button" class="chip" :class="{ 'is-on': form.mode === 'owed' }"
-                  :aria-pressed="form.mode === 'owed'" @click="setMode('owed')">
-                  To non-payers
-                </button>
-                <button type="button" class="chip" :class="{ 'is-on': form.mode === 'manual' }"
-                  :aria-pressed="form.mode === 'manual'" @click="setMode('manual')">
-                  Input manually
-                </button>
-              </div>
-              <p class="help mt-2 mb-0" x-text="formModeHelp"></p>
-            </div>
-
-            <div class="field-block" x-show="form.mode === 'manual'">
-              <div class="manual-list">
-                <template x-for="person in formPayerOptions" :key="person.id">
-                  <div class="manual-row">
-                    <label class="manual-name" :for="`manual-${person.id}`">
-                      <span x-text="person.name"></span>
-                      <span class="split-note" x-show="person.id === form.payerId">(own share)</span>
-                    </label>
-                    <input :id="`manual-${person.id}`" class="form-control" type="text" inputmode="decimal"
-                      placeholder="0" x-model="form.manual[person.id]" @input="form.error = null" />
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <p class="help help-warn mt-3 mb-0" x-show="form.error" x-text="form.error" role="alert"></p>
-          </div>
-
-          <div class="form-actions">
-            <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
-              aria-live="polite"></span>
-            <div class="form-action-buttons">
-              <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
-                x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
-              <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <template x-if="!formOpen && canAddTransaction">
-        <div class="add-float">
-          <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
-        </div>
-      </template>
     </section>
 
     <!-- People -->
@@ -385,6 +300,93 @@
       </div>
     </dialog>
   </div>
+
+  <!-- Add / edit form -->
+  <div class="txn-backdrop" x-show="formOpen" x-cloak @click="cancelForm()" aria-hidden="true"></div>
+  <template x-if="formOpen">
+    <div class="txn-sheet" x-ref="txnSheet" role="dialog" aria-modal="true" aria-label="Add or edit transaction"
+      @keydown.escape.stop="cancelForm()">
+      <div class="txn-sheet-body">
+        <div class="field-block">
+          <label class="field-label" for="txnAmount">Amount</label>
+          <input id="txnAmount" x-ref="amountInput" class="form-control" type="text" inputmode="decimal"
+            autocomplete="off" placeholder="100000" x-model="form.amount" @input="form.error = null"
+            x-init="form.id === null && !form.syncPending && $el.focus()" :aria-invalid="!!form.error" />
+          <p class="help help-warn mt-2 mb-0" x-show="form.amount && !(formAmountMinor > 0)" role="alert">
+            Enter a valid amount.
+          </p>
+        </div>
+
+        <div class="field-block">
+          <label class="field-label" for="txnPayer">Who paid?</label>
+          <select id="txnPayer" class="form-select" x-model="form.payerId" @change="form.error = null">
+            <option value="" disabled hidden>Pick someone</option>
+            <template x-for="person in formPayerOptions" :key="person.id">
+              <option :value="person.id" x-text="person.name"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="field-block">
+          <label class="field-label" for="txnName">Label (optional)</label>
+          <input id="txnName" class="form-control" type="text" maxlength="40" placeholder="Bill"
+            x-model="form.name" @input="form.error = null" />
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">How to split</span>
+          <div class="mode-row" role="group" aria-label="How to split the amount">
+            <button type="button" class="chip" :class="{ 'is-on': form.mode === 'equal' }"
+              :aria-pressed="form.mode === 'equal'" @click="setMode('equal')">
+              To everyone
+            </button>
+            <button type="button" class="chip" :class="{ 'is-on': form.mode === 'owed' }"
+              :aria-pressed="form.mode === 'owed'" @click="setMode('owed')">
+              To non-payers
+            </button>
+            <button type="button" class="chip" :class="{ 'is-on': form.mode === 'manual' }"
+              :aria-pressed="form.mode === 'manual'" @click="setMode('manual')">
+              Input manually
+            </button>
+          </div>
+          <p class="help mt-2 mb-0" x-text="formModeHelp"></p>
+        </div>
+
+        <div class="field-block" x-show="form.mode === 'manual'">
+          <div class="manual-list">
+            <template x-for="person in formPayerOptions" :key="person.id">
+              <div class="manual-row">
+                <label class="manual-name" :for="`manual-${person.id}`">
+                  <span x-text="person.name"></span>
+                  <span class="split-note" x-show="person.id === form.payerId">(own share)</span>
+                </label>
+                <input :id="`manual-${person.id}`" class="form-control" type="text" inputmode="decimal"
+                  placeholder="0" x-model="form.manual[person.id]" @input="form.error = null" />
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <p class="help help-warn mt-3 mb-0" x-show="form.error" x-text="form.error" role="alert"></p>
+      </div>
+
+      <div class="form-actions">
+        <span class="help form-inline-error" x-show="formInlineError" x-text="formInlineError" role="status"
+          aria-live="polite"></span>
+        <div class="form-action-buttons">
+          <button class="btn btn-accent" type="button" :disabled="!formCanSave" @click="saveTransaction()"
+            x-text="form.syncPending ? 'Syncing...' : 'Save'"></button>
+          <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="!formOpen && canAddTransaction">
+    <div class="add-float">
+      <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
+    </div>
+  </template>
 
   <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>

@@ -94,12 +94,12 @@
 
 .add-float {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 800;
   width: min(928px, calc(100% - 2rem));
-  transform: translateX(-50%) translateZ(0);
-  will-change: transform;
+  margin: 0 auto;
 }
 
 .add-float .btn {
