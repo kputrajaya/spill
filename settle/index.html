@@ -177,7 +177,7 @@
               <template x-for="person in state.people" :key="person.id">
                 <th scope="col" class="t-person" x-text="person.name"></th>
               </template>
-              <th scope="col" class="t-center"><span class="visually-hidden">Actions</span></th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -195,7 +195,7 @@
                     <span x-text="shareCell(transaction, person.id)"></span>
                   </td>
                 </template>
-                <td class="t-center">
+                <td>
                   <div class="txn-actions">
                     <button type="button" class="btn-x" title="Delete this transaction"
                       aria-label="Delete this transaction" @click.stop="deleteTransaction(transaction)">
