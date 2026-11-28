@@ -31,7 +31,7 @@
     <header class="page-head flex-wrap">
       <h1>&#128176; Split Bill</h1>
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-        <button class="btn btn-quiet btn-sm" type="button" @click="sendToSettle">Settle bills &rarr;</button>
+        <a class="nav-link" href="/settle/">Settle bills &rarr;</a>
       </div>
     </header>
     <input x-ref="receiptInput" type="file" accept="image/*" hidden @change="scanReceipt($event)" />
@@ -113,10 +113,13 @@
     <section class="surface">
       <div class="section-head">
         <span class="section-title">Result</span>
-        <div class="d-flex flex-wrap justify-content-end gap-2">
-          <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
-          <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
-        </div>
+        <template x-if="bill">
+          <div class="d-flex flex-wrap justify-content-end gap-2">
+            <button class="btn btn-quiet btn-sm" type="button" @click="settleInNewTab">Save</button>
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyBillSummary">Copy summary</button>
+            <button class="btn btn-quiet btn-sm" type="button" @click="copyShareLink">Copy link</button>
+          </div>
+        </template>
       </div>
 
       <template x-if="!bill">
@@ -134,7 +137,7 @@
                   W.&nbsp;fee&nbsp;(<span x-text="formatFee(bill.feePercent)"></span>%)
                 </th>
                 <template x-for="person in bill.people" :key="person">
-                  <th scope="col" x-text="person"></th>
+                  <th scope="col" class="t-person" x-text="person"></th>
                 </template>
               </tr>
             </thead>

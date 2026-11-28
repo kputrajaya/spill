@@ -528,13 +528,14 @@
         /* ------------------------ Settle handoff ---------------------- */
 
         // The settle page reads these params once, then cleans its URL.
-        sendToSettle() {
+        settleInNewTab() {
           const bill = this.bill;
-
-          // Nothing to move: go straight to settlement without a handoff.
-          if (!bill?.people?.length || bill.people.length < 2) {
-            flushUrlState();
-            window.location.href = '/settle/';
+          if (!bill?.people?.length) {
+            toast.error('Complete the bill first.');
+            return;
+          }
+          if (bill.people.length < 2) {
+            toast.error('Add at least two people to settle.');
             return;
           }
           if (bill.people.length > MAX_SETTLE_PEOPLE) {
@@ -547,16 +548,15 @@
             toast.error('Add a total before settling.');
             return;
           }
-          if (!confirm('Send this bill to settlement?')) return;
 
           const params = new URLSearchParams({
             from: 'split',
-            t: String(toMinor(bill.total)),
+            t: String(totalMinor),
             p: bill.people.join('|'),
             a: bill.people.map((person) => String(toMinor(bill.totals[person]))).join('|'),
           });
           flushUrlState();
-          window.location.href = `/settle/?${params.toString()}`;
+          window.open(`/settle/?${params.toString()}`, '_blank', 'noopener');
         },
 
         /* --------------------------- Formatting ----------------------- */

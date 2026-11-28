@@ -217,11 +217,6 @@
 /* Tables                                                              */
 /* ------------------------------------------------------------------ */
 
-/* People columns stand out from the secondary metric/name headers. */
-.tbl thead th.t-person {
-  color: var(--ink);
-}
-
 /* The balances and transactions tables end without a trailing rule. */
 .tbl-balances tbody tr:last-child td,
 .tbl-balances tbody tr:last-child th,

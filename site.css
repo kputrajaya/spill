@@ -55,6 +55,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Cross-page header links stay inline instead of reading as buttons. */
+.nav-link {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 /* ------------------------------------------------------------------ */
 /* Layout                                                              */
 /* ------------------------------------------------------------------ */
@@ -396,6 +411,10 @@ textarea.form-control.list-input {
   font-weight: 700;
   color: var(--muted);
   border-bottom: 1px solid var(--line-strong);
+}
+/* People columns stand out from the secondary metric/name headers. */
+.tbl thead th.t-person {
+  color: var(--ink);
 }
 .tbl tbody td {
   color: var(--ink-soft);

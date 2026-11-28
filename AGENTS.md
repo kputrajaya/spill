@@ -66,7 +66,7 @@ Root state model:
 - Cached computed: `bill`.
 - Persisted: `spill:roundWhole` only.
 
-Root component methods to keep consistent when editing: `recalculate()`, `scheduleUrlSync()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `sendToSettle()`, `copyBillSummary()`, `copyShareLink()`, `exactAmount()`, `formatAmount()`, `formatFee()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
+Root component methods to keep consistent when editing: `recalculate()`, `scheduleUrlSync()`, `cycleShare()`, `shareEveryone()`, `normalizeNames()`, `settleInNewTab()`, `copyBillSummary()`, `copyShareLink()`, `exactAmount()`, `formatAmount()`, `formatFee()`. Pure helpers exported as `spill`: `parseNumber`, `parseItems`, `parseNames`, `sanitizeName`, `clampShare`, `toMinor`, `fromMinor`, `roundAmount`, `formatAmount`, `calculateBill`, `parseShares`, `encodeShares`, `settleBalances`, `settleGreedy`, `EXACT_LIMIT`.
 
 Each settle ledger is persisted under `spill:settle:ledger:<key>`. The index under `spill:settle:index` stores `{ active, ledgers: [{ key, updatedAt }] }`; display rounding shares `spill:roundWhole` with the split page.
 
@@ -137,7 +137,7 @@ Each settle ledger is persisted under `spill:settle:ledger:<key>`. The index und
 - The `Whole numbers` switch (`roundWhole`) at the bottom of the Input card toggles between whole numbers and two decimal places for display only and shares its setting with the settle page. Calculations, share links, and the handoff keep exact minor units; each displayed cell rounds independently (within 0.5 of exact).
 - The bill is encoded in URL query parameters so `Copy link` can share it: `t` (total amount), `i` (item prices, newline-separated, written as `|`), `p` (roster, `|`-separated), and `a` (per item, comma-separated `NAME` or `NAME+weight` tokens, items separated by `|`).
 - Scanning a receipt fills the total and the price list as `amount - name` lines and clears assignments; it never touches the people field. The model preserves printed separators and `parseNumber()` normalizes them in the browser. The scan button is disabled and reads `Scanning...` until the request finishes or fails.
-- `Settle bills` sits in the page header at the top right. With a valid bill of at least two people it asks `Send this bill to settlement?` and then sends the exact `bill.total` and each person's `bill.totals` in minor units to `/settle/` in the same tab. With no bill (or only one person) it skips the question and opens `/settle/` directly. It does not persist anything on the split page.
+- `Settle bills` sits in the page header at the top right and is a static link to `/settle/`. The Result card's `Save` button opens the handoff in a new tab with the exact `bill.total` and each person's `bill.totals` in minor units; if the handoff is not applicable (no complete bill, fewer than two people, too many people, or no total) it shows an error toast and does not navigate. The header `Settle bills` link opens settlement without a bill.
 
 ### Settle page
 
@@ -184,6 +184,6 @@ node tests/site.test.js
 node tests/settle.test.js
 ```
 
-For frontend changes, open both pages and check bill calculation, empty states, shareable links, copy actions, rounding, `Settle bills` handoff, add/edit/delete transactions, all split modes, People rename/remove guards, persistence after reload, and settlement copying. For sync changes, open two tabs with the same `?k=` link and check that adding, editing, deleting, and renaming propagate both ways, while a tab without `k` stays local. Both pages must stay free of horizontal overflow at mobile widths (test ~390 px); the split price field grows vertically with its content and scrolls sideways instead of wrapping.
+For frontend changes, open both pages and check bill calculation, empty states, shareable links, copy actions, rounding, the Result `Save` handoff, add/edit/delete transactions, all split modes, People rename/remove guards, persistence after reload, and settlement copying. For sync changes, open two tabs with the same `?k=` link and check that adding, editing, deleting, and renaming propagate both ways, while a tab without `k` stays local. Both pages must stay free of horizontal overflow at mobile widths (test ~390 px); the split price field grows vertically with its content and scrolls sideways instead of wrapping.
 
 For receipt scanning changes, run `vercel dev`, set `OPENAI_API_KEY` in the local environment, and test a representative receipt without logging or committing the image or API key. A scanned receipt should fill the total, produce `amount - name` lines, clear assignments, leave the people field untouched, and let `parseNumber()` normalize `2.000`-style amounts to `2000`.
