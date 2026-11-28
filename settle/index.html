@@ -3,8 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="color-scheme" content="light" />
   <title>Settle Bills</title>
@@ -29,8 +28,8 @@
     crossorigin="anonymous"></script>
 </head>
 
-<body x-data="settle" x-cloak :class="{ 'sheet-open': formOpen }">
-  <div class="container page" :class="{ 'has-add': !formOpen }">
+<body x-data="settle" x-cloak>
+  <div class="container page" :class="{ 'has-sheet': formOpen, 'has-add': !formOpen }">
     <header class="page-head">
       <h1>&#129309; Settle Bills</h1>
       <div class="head-actions">
