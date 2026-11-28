@@ -192,6 +192,10 @@ body {
   background: rgba(17, 17, 17, 0.35);
 }
 
+.settle-dialog .section-title {
+  color: var(--ink);
+}
+
 .settle-dialog.txn-dialog {
   width: min(640px, calc(100% - 2rem));
   max-width: calc(100% - 2rem);
