@@ -848,7 +848,7 @@
 
         init() {
           window.addEventListener('resize', () => {
-            if (this.formOpen) this.$nextTick(() => this.alignSheet());
+            this.$nextTick(() => this.alignBottomUi());
           });
 
           const loaded = loadIndex();
@@ -889,7 +889,11 @@
           this.lastPublishedRev = this.state.rev;
           this.freshJoin = ledger.fresh;
           this.$watch('state', () => this.persistLedger());
+          this.$watch('state.people.length', () =>
+            this.$nextTick(() => this.alignBottomUi())
+          );
           this.persistLedger();
+          this.$nextTick(() => this.alignBottomUi());
 
           if (loaded.repaired) {
             toast.error('Saved data was unreadable; recovered what we could (backup kept).');
@@ -1152,7 +1156,7 @@
             error: null,
           };
           this.formOpen = true;
-          this.$nextTick(() => this.alignSheet());
+          this.$nextTick(() => this.alignBottomUi());
         },
 
         cancelForm() {
@@ -1162,16 +1166,29 @@
           this.formOpen = false;
           this.form = null;
           if (pendingHandoff) clearHandoffParams();
+          this.$nextTick(() => this.alignBottomUi());
         },
 
-        alignSheet() {
-          const sheet = this.$refs.txnSheet;
+        alignBottomUi() {
           const card = document.querySelector('.surface');
-          if (!sheet || !card) return;
+          if (!card) return;
           const rect = card.getBoundingClientRect();
-          sheet.style.left = `${rect.left}px`;
-          sheet.style.width = `${rect.width}px`;
-          sheet.style.transform = 'none';
+
+          const sheet = this.$refs.txnSheet;
+          if (sheet) {
+            sheet.style.left = `${rect.left}px`;
+            sheet.style.width = `${rect.width}px`;
+            sheet.style.transform = 'none';
+          }
+
+          const add = this.$refs.addFloat;
+          if (add) {
+            add.style.left = `${rect.left}px`;
+            add.style.width = `${rect.width}px`;
+            add.style.right = 'auto';
+            add.style.margin = '0';
+            add.style.transform = 'none';
+          }
         },
 
         previewFor(mode) {
@@ -1695,6 +1712,7 @@
           }
 
           this.settingsError = '';
+          this.$nextTick(() => this.alignBottomUi());
           return true;
         },
 

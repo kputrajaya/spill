@@ -383,7 +383,7 @@
   </template>
 
   <template x-if="!formOpen && canAddTransaction">
-    <div class="add-float">
+    <div class="add-float" x-ref="addFloat">
       <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
     </div>
   </template>
