@@ -302,10 +302,9 @@
   </div>
 
   <!-- Add / edit form -->
-  <div class="txn-backdrop" x-show="formOpen" x-cloak @click="cancelForm()" aria-hidden="true"></div>
   <template x-if="formOpen">
-    <div class="txn-sheet" x-ref="txnSheet" role="dialog" aria-modal="true" aria-label="Add or edit transaction"
-      @keydown.escape.stop="cancelForm()">
+    <dialog class="txn-sheet" x-ref="txnSheet" x-init="$nextTick(() => alignBottomUi())"
+      aria-label="Add or edit transaction" @click.self="cancelForm()" @cancel.prevent="cancelForm()">
       <div class="txn-sheet-body">
         <div class="field-block">
           <label class="field-label" for="txnAmount">Amount</label>
@@ -379,14 +378,13 @@
           <button class="btn btn-quiet" type="button" @click="cancelForm()">Cancel</button>
         </div>
       </div>
-    </div>
+    </dialog>
   </template>
 
-  <template x-if="!formOpen && canAddTransaction">
-    <div class="add-float" x-ref="addFloat">
-      <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
-    </div>
-  </template>
+  <dialog class="add-float" x-ref="addFloat" x-init="$nextTick(() => alignBottomUi())" aria-label="Add transaction"
+    @cancel.prevent>
+    <button class="btn btn-accent" type="button" @click="startAdd()">Add transaction</button>
+  </dialog>
 
   <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>

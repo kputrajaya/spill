@@ -890,10 +890,16 @@
           this.freshJoin = ledger.fresh;
           this.$watch('state', () => this.persistLedger());
           this.$watch('state.people.length', () =>
-            this.$nextTick(() => this.alignBottomUi())
+            this.$nextTick(() => {
+              this.alignBottomUi();
+              this.syncAddBar();
+            })
           );
           this.persistLedger();
-          this.$nextTick(() => this.alignBottomUi());
+          this.$nextTick(() => {
+            this.alignBottomUi();
+            this.syncAddBar();
+          });
 
           if (loaded.repaired) {
             toast.error('Saved data was unreadable; recovered what we could (backup kept).');
@@ -1156,17 +1162,27 @@
             error: null,
           };
           this.formOpen = true;
-          this.$nextTick(() => this.alignBottomUi());
+          this.syncAddBar();
+          this.$nextTick(() => {
+            this.alignBottomUi();
+            const sheet = this.$refs.txnSheet;
+            if (sheet && !sheet.open) sheet.showModal();
+          });
         },
 
         cancelForm() {
           // Dismissing the provisional handoff editor abandons the link too;
           // otherwise the pending sync would reopen the same form.
           const pendingHandoff = this.form?.syncPending;
+          const sheet = this.$refs.txnSheet;
+          if (sheet?.open) sheet.close();
           this.formOpen = false;
           this.form = null;
           if (pendingHandoff) clearHandoffParams();
-          this.$nextTick(() => this.alignBottomUi());
+          this.$nextTick(() => {
+            this.alignBottomUi();
+            this.syncAddBar();
+          });
         },
 
         alignBottomUi() {
@@ -1174,20 +1190,30 @@
           if (!card) return;
           const rect = card.getBoundingClientRect();
 
-          const sheet = this.$refs.txnSheet;
-          if (sheet) {
-            sheet.style.left = `${rect.left}px`;
-            sheet.style.width = `${rect.width}px`;
-            sheet.style.transform = 'none';
-          }
+          [this.$refs.txnSheet, this.$refs.addFloat].forEach((el) => {
+            if (!el) return;
+            el.style.left = `${rect.left}px`;
+            el.style.width = `${rect.width}px`;
+            el.style.right = 'auto';
+            el.style.margin = '0';
+            el.style.transform = 'none';
+          });
+        },
 
-          const add = this.$refs.addFloat;
-          if (add) {
-            add.style.left = `${rect.left}px`;
-            add.style.width = `${rect.width}px`;
-            add.style.right = 'auto';
-            add.style.margin = '0';
-            add.style.transform = 'none';
+        syncAddBar() {
+          const bar = this.$refs.addFloat;
+          if (!bar) return;
+          if (
+            this.$refs.peopleDialog?.open ||
+            this.$refs.ledgerDialog?.open
+          ) {
+            if (bar.open) bar.close();
+            return;
+          }
+          if (!this.formOpen && this.canAddTransaction) {
+            if (!bar.open) bar.show();
+          } else if (bar.open) {
+            bar.close();
           }
         },
 
@@ -1423,6 +1449,7 @@
           this.settingsDraft = this.state.people.map((person) => ({ ...person }));
           this.settingsError = '';
           this.$nextTick(() => {
+            this.$refs.addFloat?.close();
             const dialog = this.$refs.peopleDialog;
             dialog?.showModal();
             dialog?.focus();
@@ -1435,6 +1462,7 @@
           this.settingsDraft = [];
           this.settingsError = '';
           this.$refs.peopleDialog?.close();
+          this.syncAddBar();
         },
 
         cancelPeople() {
@@ -1442,6 +1470,7 @@
           this.settingsDraft = [];
           this.settingsError = '';
           this.$refs.peopleDialog?.close();
+          this.syncAddBar();
         },
 
         openLedgers() {
@@ -1465,7 +1494,10 @@
           this.settingsLedgerStates = {};
           this.settingsLedgerKey = this.syncKey;
           this.ledgerError = '';
-          this.$nextTick(() => this.$refs.ledgerDialog?.showModal());
+          this.$nextTick(() => {
+            this.$refs.addFloat?.close();
+            this.$refs.ledgerDialog?.showModal();
+          });
         },
 
         closeLedgers() {
@@ -1475,6 +1507,7 @@
           this.settingsLedgerKey = '';
           this.ledgerError = '';
           this.$refs.ledgerDialog?.close();
+          this.syncAddBar();
         },
 
         cancelLedgers() {
@@ -1483,6 +1516,7 @@
           this.settingsLedgerKey = '';
           this.ledgerError = '';
           this.$refs.ledgerDialog?.close();
+          this.syncAddBar();
         },
 
         // Resolve a ledger row to its data, including rows that were added in
@@ -1712,7 +1746,10 @@
           }
 
           this.settingsError = '';
-          this.$nextTick(() => this.alignBottomUi());
+          this.$nextTick(() => {
+            this.alignBottomUi();
+            this.syncAddBar();
+          });
           return true;
         },
 
